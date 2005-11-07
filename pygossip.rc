@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# pygossip	This shell script takes care of starting and stopping pygossip.
+#
+# chkconfig: 2345 80 30
+# description: Pygossip is an email domain reputation service.
+# processname: pygossip
+# config: /etc/mail/pygossip.cfg
+# pidfile: /var/run/milter/pygossip.pid
+
+python="python2.4"
+
+pidof() {
+	set - ""
+	if set - `ps -e -o pid,cmd | grep "${python} pygossip.py"` &&
+	  [ "$2" != "grep" ]; then
+	  echo $1
+	  return 0
+	fi
+	return 1
+}
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+[ -x /var/log/milter/pygossip.sh ] || exit 0
+
+RETVAL=0
+prog="pygossip"
+
+start() {
+	# Start daemons.
+
+	echo -n "Starting $prog: "
+	daemon --check pygossip --user mail /var/log/milter/pygossip.sh
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/pygossip
+	return $RETVAL
+}
+
+stop() {
+	# Stop daemons.
+	echo -n "Shutting down $prog: "
+	killproc pygossip
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/pygossip
+	return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart|reload)
+	stop
+	start
+	RETVAL=$?
+	;;
+  condrestart)
+	if [ -f /var/lock/subsys/pygossip ]; then
+	    stop
+	    start
+	    RETVAL=$?
+	fi
+	;;
+  status)
+	status pygossip
+	RETVAL=$?
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|condrestart|status}"
+	exit 1
+esac
+
+exit $RETVAL

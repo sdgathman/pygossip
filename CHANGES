@@ -1,0 +1,7 @@
+0.1	Initial alpha release
+	The library works in a production milter
+	The server works in testing
+	Used GPL license because I started with C implementation
+	which is GPL.  There isn't much left of the original C code
+	except comments, but GPL is a safe starting license.  I
+	can provide a PSF license later if needed.

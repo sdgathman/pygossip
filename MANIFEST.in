@@ -1,0 +1,10 @@
+include test.py
+include pygossip.py
+include setup.py
+include setup.cfg
+include pygossip.cfg
+include pygossip.rc
+include pygossip.spec
+include MANIFEST.in
+include COPYING
+include CHANGES
