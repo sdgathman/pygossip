@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.1.1.1  2005/11/07 21:17:56  customdesigned
+# Python GOSSiP Domain Reputation Service
+#
 
 import shelve
 import time
@@ -156,7 +159,10 @@ class CircularQueue(object):
     # Check to see if we're about to overwrite an existing UMIS in the 
     # circular queue.  If we are, remove its entry in the hash table first.
     rh = rseen[ptr_rseen]
-    if rh: del self.hashtab[rh.umis]
+    if rh: 
+      try:
+        del self.hashtab[rh.umis]
+      except KeyError: pass
     rh = rhash(umis,id,ptr_rseen)
     rseen[ptr_rseen] = rh
     ptr_rseen += 1
