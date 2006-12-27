@@ -36,20 +36,93 @@ def count_ones(curr):
     curr &= (curr - 1)
   return n
 
+MAX_PEER_OBS = 100
+
+class Peer(object):
+
+  def __init__(self,host,port):
+    self.obs = server.Observations(MAX_PEER_OBS)
+    self.client = client.Gossip(host,port)
+
+  def query(self,umis,id,qual,ttl):
+    res = self.client.query(umis,id,qual,ttl)
+    p_umis,rep,cfi = res[2].split(',')
+    assert p_umis == umis
+    self.rep = int(rep)
+    self.cfi = int(cfi)
+    return self.rep,self.cfi
+
+  def assess(self,rep,cfi):
+    "Compare most recent opinion with our opinion and update reputation"
+    if self.cfi >= 1 and int(cfi) >= 1:
+      # disagreed
+      if self.rep > 0 and rep < 0:
+	self.obs.setspam(1)
+      elif self.rep < 0 and rep > 0:
+	self.obs.setspam(1)
+      # agreed
+      elif self.rep > 0 and rep > 0:
+	self.obs.setspam(-1)
+      elif self.rep < 0 and rep < 0:
+	self.obs.setspam(-1)
+      # unsure
+      else:
+	self.obs.setspam(0)
+    else:
+      self.obs.setspam(0)
+    p_rep = self.obs.reputation()
+    p_res = self.rep * self.cfi/100.0
+    if p_rep < 0:
+      p_res *= -p_rep/100
+    return p_res,self.cfi
+
+def average(l):
+  sum,sum2 = 0,0
+  for x,y in l:
+    sum += x
+    sum2 += y
+  n = len(l)
+  return sum/n,sum2/n
+
+def aggregate(agg):
+  "Aggregate reputation and confidence scores"
+  avg,avg2 = average((rep,rep * rep) for rep,cfi in agg)
+  var = avg2 - avg * avg	# variance
+  n = len(agg)
+  stddev = math.sqrt(var * n / (n - 1))	# sample standard deviation
+  # remove outliers (more than 3 * stddev from mean) and return means
+  return average((rep,cfi) for rep,cfi in agg if abs(rep - avg)/stddev <= 3)
+
 class Observations(object):
-  "Record up to MAXOBS observations of an id."
-  def __init__(self):
+  "Record up to maxobs observations of an id."
+  __slots__ = (
+    'bptr','bcnt','hcnt','ncnt','maxobs','firstseen','lastseen','obs','null')
+  def __init__(self,maxobs=MAXOBS):
     self.bptr = 0
-    self.bcnt = 0
+    self.bcnt = 0	# observation count
     self.hcnt = 0	# cached ham count
+    self.ncnt = 0	# cached null count
+    self.maxobs = maxobs
     now = time.time()
     self.firstseen = now
     self.lastseen = now
     self.obs = 0L
+    self.null = 0L
+
+  def ok(self):
+    "Return true if internally consistent"
+    if self.hcnt == count_ones(self.obs & ~self.null) \
+    	and self.ncnt == count_ones(self.null) \
+	and 0 <= self.bptr < self.maxobs \
+	and 0 <= self.ncnt + self.hcnt <= self.bcnt:
+      return True
+    print "%s ncnt=%d obs=%d null=%d"%(self,self.ncnt,
+    	count_ones(self.obs & ~self.null),count_ones(self.null))
+    return False
 
   def __str__(self):
     return "%d:%d:%s" % (
-      self.hcnt,self.bcnt - self.hcnt,time.ctime(self.lastseen))
+      self.hcnt,self.bcnt - self.hcnt - self.ncnt,time.ctime(self.lastseen))
 
   # The reputation score is represented by the function:
   #                              ((P(h) - P(s))k)
@@ -70,16 +143,16 @@ class Observations(object):
   def reputation(self):
     n = self.bcnt
     if not n: return 0.0
-    #N = float(MAXOBS)
+    #N = float(self.maxobs)
     N = float(n)
     k = 2
     ham = self.hcnt
-    spam = n - ham
+    spam = n - ham - self.ncnt
     log.info("ham: %d, spam: %d"%(ham, spam))
     ph =  ham / N
     ps = spam / N
 
-    log.info("P(h) = %f   P(s) = %f"%(ph, ps))
+    log.debug("P(h) = %f   P(s) = %f"%(ph, ps))
     num =     math.exp(k * (ph - ps))
     denom = 1 + math.exp(k * (ph - ps))
 
@@ -108,7 +181,7 @@ class Observations(object):
 
   def confidence(self):
     "compute confidence"
-    N = float(MAXOBS)
+    N = float(self.maxobs)
     epoch = self.firstseen
     now = time.time()
     if now <= epoch:
@@ -117,19 +190,44 @@ class Observations(object):
     return self.bcnt / N * age
 
   def setspam(self,v):
-    "Add spam status to observation cache."
+    """Add spam status to observation cache.
+	v = 1	not spam
+	v = 0	N/A
+	v = -1	spam
+
+	Examples:
+	>>> c = Observations(3)
+	>>> c.setspam(-1); c.hcnt,c.bcnt,c.ncnt
+	(0, 1, 0)
+	>>> c.setspam(1); c.hcnt,c.bcnt,c.ncnt
+	(1, 2, 0)
+	>>> c.setspam(0); c.hcnt,c.bcnt,c.ncnt
+	(1, 3, 1)
+	>>> c.setspam(1); c.hcnt,c.bcnt,c.ncnt
+	(2, 3, 1)
+    """
     thisbit = 2**self.bptr
-    prev = not (self.obs & thisbit)
-    if v:
-      self.hcnt -= not prev
+    prev = not (self.obs & thisbit)	# slot was previously spam
+    notnull = not (self.null & thisbit)
+    if v < 0:
+      self.hcnt -= not prev and notnull
+      self.ncnt -= not notnull
       self.obs &= ~thisbit
-    else:
-      self.hcnt += prev
+      self.null &= ~thisbit
+    elif v > 0:
+      self.hcnt += prev or not notnull
+      self.ncnt -= not notnull
       self.obs |= thisbit
+      self.null &= ~thisbit
+    else:
+      self.hcnt -= not prev and notnull
+      self.null |= thisbit
+      self.ncnt += notnull
+      
     self.bptr += 1
-    if self.bptr >= MAXOBS:
+    if self.bptr >= self.maxobs:
       self.bptr=0  
-    elif self.bcnt < MAXOBS:
+    if self.bcnt < self.maxobs:
       self.bcnt += 1
     self.lastseen = time.time()
 
@@ -147,13 +245,19 @@ class CircularQueue(object):
     self.ptr_rseen = 0
     self.hashtab = {}
 
-  def lookup(self,umis):
+  def remove(self,umis):
     "Return (and remove) id corresponding to umis, or None"
     rh = self.hashtab.pop(umis,None)
     if rh:
       self.rseen[rh.ptr] = None
       return rh.id
     return None
+
+  def seen(self,umis):
+    "Return True if umis was recently seen."
+    if self.hashtab.get(umis,None):
+      return True
+    return False
 
   def add(self,umis,id):
     "Add umis,id to cache"
@@ -180,6 +284,7 @@ class Gossip(object):
     self.dbp = shelve.open(dbname,'c')
     self.cirq = CircularQueue(size)
     self.lock = thread.allocate_lock()
+    self.peers = []
 
   def query(self,umis,id,qual,ttl):
     self.lock.acquire()
@@ -202,6 +307,18 @@ class Gossip(object):
     finally:
       self.lock.release()
     log.info("reputation score is: %f,%f"%(rep,cfi))
+    if ttl > 0 and self.peers:
+      if self.cirq.seen(umis):
+        agg = []	# already answered for this umis, exclude ourselves
+      else:
+	agg = [(rep,cfi)]
+      # FIXME: need to query peers asyncronously
+      for peer in self.peers:
+        peer.query(umis,id,qual,ttl-1)
+	agg.append(peer.assess(rep,cfi))
+      rep,cfi = aggregate(agg)
+    elif self.cirq.seen(umis):
+      return None	# already answered for this umis
 
     # Here, I need to decide whether to send a reject or a header.
     # Give the person deploying an option to never send a reject, but always
@@ -214,7 +331,7 @@ class Gossip(object):
     "Set the spam status of a recently seen umis."
     self.lock.acquire()
     try:
-      key = self.cirq.lookup(umis)
+      key = self.cirq.remove(umis)
       if key:
 	dbp = self.dbp
 	log.debug("rec'd umis for feedback...%s"%umis)
@@ -225,11 +342,11 @@ class Gossip(object):
 	  op = Observations()
 	  new = True
 	if spam == 'Yes':
-	  op.setspam(1)
+	  op.setspam(-1)
 	elif spam == 'No':
-	  op.setspam(0)
+	  op.setspam(1)
 	else:
-	  op.setspam(int(spam))
+	  op.setspam(int(spam) * -2 + 1)
 	if new:
 	  log.debug("new data stored: %s"%op)
 	dbp[key] = op
@@ -238,6 +355,7 @@ class Gossip(object):
 	log.info("UMIS not in hash table.")
     finally:
       self.lock.release()
+
 
   def do_request(self,buf):
     # Get input from SSL connection, store info in rep db if not already there.
@@ -261,3 +379,7 @@ class Gossip(object):
       #self.do_r(umis,spam)
       return None
     raise ValueError('req: '+buf)
+
+if __name__ == '__main__':
+  import doctest, server
+  doctest.testmod(server)

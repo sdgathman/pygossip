@@ -24,7 +24,7 @@ class Gossip(object):
     else:
       sock.send(req)
     buf = sock.recv(256)
-    return buf.strip()
+    return buf.strip().split()
 
   def feedback(self,umis,spam):
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
