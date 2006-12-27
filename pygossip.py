@@ -9,7 +9,7 @@ import sys
 import gossip
 import logging
 
-from gossip.server import Gossip
+from gossip.SocketServer import Daemon
 
 REP_DB = "test.db"
 RSEEN_MAX = 30
@@ -21,35 +21,6 @@ logging.basicConfig(
         datefmt='%Y%b%d %H:%M:%S'
 )
 
-log = logging.getLogger('gossip')
-
-class Handler(SocketServer.BaseRequestHandler):
-
-  def readline(self):
-    ssl = self.request
-    buf = self.buf
-    pos = buf.find('\012')
-    while pos < 0:
-      buf += ssl.recv(256)
-      pos = buf.find('\012')
-    self.buf = buf[pos+1:]
-    return buf[:pos]
-
-  def handle(self):
-    log.debug("connect")
-    ssl = self.request
-    self.buf = ''
-    while True:
-      try:
-        buf = self.readline()
-	if buf == '': break
-        resp = gossip.do_request(buf)
-	if resp:
-	  ssl.send(resp+'\012\012')
-      except EOFError:
-        log.debug("Ending connection")
-	return
-
 def main():
   config_path = ("gossip.cfg","/etc/mail/gossip.cfg")
 
@@ -57,15 +28,13 @@ def main():
     { 'port': '11900', 'rep_db': '/var/log/milter/gossip4.db' }
   )
   cp.read(config_path)
-  global REP_DB,gossip
   gport = cp.getint('gossip','port')
-  REP_DB = cp.get('gossip','rep_db')
-  gossip = Gossip(REP_DB,RSEEN_MAX)
+  db = cp.get('gossip','rep_db')
+  gossip = Gossip(db,RSEEN_MAX)
   server_addr = ('0.0.0.0',gport)
 
-  server = SocketServer.ThreadingTCPServer(server_addr,Handler)
-  server.serve_forever()
-  #server.handle_request()
+  server = Daemon(addr='0.0.0.0',port=gport,gossip)
+  server.run()
 
 if __name__ == '__main__':
   if len(sys.argv) > 1:

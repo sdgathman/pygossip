@@ -5,23 +5,31 @@
 
 import unittest
 import doctest
+import random
 import gossip.server
 
 class GossipTestCase(unittest.TestCase):
   def testObservations(self):
     os = gossip.server.Observations()
-    for i in xrange(100): os.setspam(1)
+    for i in xrange(100): os.setspam(-1)
     self.assertEqual(os.bcnt,100)
     self.assertEqual(os.hcnt,0)
-    for i in xrange(100): os.setspam(0)
+    for i in xrange(100): os.setspam(1)
     self.assertEqual(os.bcnt,200)
     self.assertEqual(os.hcnt,100)
-    for i in xrange(1000): os.setspam(0)
+    for i in xrange(1000): os.setspam(1)
     self.assertEqual(os.bcnt,gossip.server.MAXOBS)
     self.assertEqual(os.hcnt,gossip.server.MAXOBS)
-    for i in xrange(100): os.setspam(1)
+    for i in xrange(100): os.setspam(-1)
     self.assertEqual(os.bcnt,gossip.server.MAXOBS)
     self.assertEqual(os.hcnt,gossip.server.MAXOBS-100)
+    for i in xrange(50): os.setspam(0)
+    self.assertEqual(os.bcnt,gossip.server.MAXOBS)
+    self.assertEqual(os.hcnt,gossip.server.MAXOBS-150)
+    self.assertEqual(os.ncnt,50)
+    for i in xrange(2000):
+      os.setspam(random.randint(-1,1))
+    self.assertTrue(os.ok())
 
 def suite():
   s = unittest.makeSuite(GossipTestCase,'test')
