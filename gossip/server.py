@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.5  2006/12/27 04:08:26  customdesigned
+# Server running in pymilter again.
+#
 # Revision 1.4  2006/12/27 00:22:45  customdesigned
 # Initial peer implementation.
 #
@@ -75,6 +78,7 @@ class Peer(object):
       self.obs.setspam(0)
     p_rep = self.obs.reputation()
     p_res = self.rep * self.cfi/100.0
+    # should peer agreement reputation affect cfi instead of res?
     if p_rep < 0:
       p_res *= -p_rep/100
     return p_res,self.cfi
@@ -104,8 +108,20 @@ class Observations(object):
     return self.bptr,self.bcnt,self.hcnt,self.ncnt,self.maxobs,	\
       self.firstseen,self.lastseen,self.obs,self.null
   def __setstate__(self,s):
-    self.bptr,self.bcnt,self.hcnt,self.ncnt,self.maxobs, \
-      self.firstseen,self.lastseen,self.obs,self.null = s
+    try:
+      self.bptr,self.bcnt,self.hcnt,self.ncnt,self.maxobs, \
+	self.firstseen,self.lastseen,self.obs,self.null = s
+    except ValueError:
+      self.bptr = s['bptr']
+      self.bcnt = s['bcnt']
+      self.hcnt = s['hcnt']
+      self.firstseen = s['firstseen']
+      self.lastseen = s['lastseen']
+      self.obs = s['obs']
+      self.maxobs = MAXOBS
+      self.ncnt = 0
+      self.null = 0L
+
   def __init__(self,maxobs=MAXOBS):
     self.bptr = 0
     self.bcnt = 0	# observation count
@@ -312,12 +328,11 @@ class Gossip(object):
       # data I have for this ID.
       rep = op.reputation()
       cfi = op.confidence()
-      self.cirq.add(umis,id)
     finally:
       self.lock.release()
     log.info("reputation score is: %f,%f"%(rep,cfi))
     if ttl > 0 and self.peers:
-      if False and self.cirq.seen(umis):
+      if self.cirq.seen(umis):
         agg = [] # already answered for this umis, exclude ourselves ???
       else:
 	agg = [(rep,cfi)]
@@ -326,8 +341,9 @@ class Gossip(object):
         peer.query(umis,id,qual,ttl-1)
 	agg.append(peer.assess(rep,cfi))
       rep,cfi = aggregate(agg)
-    elif False and self.cirq.seen(umis):
+    elif self.cirq.seen(umis):
       return None	# already answered for this umis ???
+    self.cirq.add(umis,id)
 
     # Here, I need to decide whether to send a reject or a header.
     # Give the person deploying an option to never send a reject, but always
