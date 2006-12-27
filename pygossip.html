@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Python GOSSiP</title>
+</head><body>
+
+<P ALIGN="CENTER"><A HREF="http://www.anybrowser.org/campaign/">
+<IMG SRC="/art/brain1.gif"
+ALT="Viewable With Any Browser" BORDER="0"></A>
+
+<img src="/art/banner_4.gif" width="468" height="60" border="0"
+	usemap="#banner_4" alt="Your vote?">
+<map name="banner_4">
+  <area shape="rect" coords="330,25,426,59"
+  	href="http://education-survey.org/" alt="I Disagree">
+  <area shape="rect" coords="234,28,304,57" href="http://sepschool.org/" alt="I Agree">
+</map>
+
+</P>
+<h1 align=center>GOSSiP Domain Reputation Service in Python</h1>
+<h4 align=center>
+This web page is written by Stuart D. Gathman<br>and<br>sponsored by
+<a href="http://www.bmsi.com">Business Management Systems, Inc.</a> <br>
+Last updated Nov 07, 2005</h4>
+
+<p>
+This is a <a href="http://www.python.org/">Python</a> implementation of
+the <a href="http://gossip-project.sourceforge.net">GOSSiP</a>
+Distributed Domain Reputation system.
+It includes a test suite, which currently checks the Observations cache
+implementation.  The RedHat RPM sets up a pygossip service.
+
+<h3> Pymilter integration </h3>
+
+If the Python gossip package is installed, the bms.py 
+<a href="milter.html">milter</a> will query a local reputation database for
+reputation.  If <a href="dspam.html">pydspam</a> is
+also installed, it will provide feedback to the local database.
+<p>
+The next release will support remote gossip nodes.
+
+</body></html>
