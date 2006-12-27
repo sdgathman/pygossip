@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.4  2006/12/27 00:22:45  customdesigned
+# Initial peer implementation.
+#
 # Revision 1.2  2005/12/24 00:43:44  customdesigned
 # handle missing umis
 #
@@ -97,6 +100,12 @@ class Observations(object):
   "Record up to maxobs observations of an id."
   __slots__ = (
     'bptr','bcnt','hcnt','ncnt','maxobs','firstseen','lastseen','obs','null')
+  def __getstate__(self):
+    return self.bptr,self.bcnt,self.hcnt,self.ncnt,self.maxobs,	\
+      self.firstseen,self.lastseen,self.obs,self.null
+  def __setstate__(self,s):
+    self.bptr,self.bcnt,self.hcnt,self.ncnt,self.maxobs, \
+      self.firstseen,self.lastseen,self.obs,self.null = s
   def __init__(self,maxobs=MAXOBS):
     self.bptr = 0
     self.bcnt = 0	# observation count
@@ -308,8 +317,8 @@ class Gossip(object):
       self.lock.release()
     log.info("reputation score is: %f,%f"%(rep,cfi))
     if ttl > 0 and self.peers:
-      if self.cirq.seen(umis):
-        agg = []	# already answered for this umis, exclude ourselves
+      if False and self.cirq.seen(umis):
+        agg = [] # already answered for this umis, exclude ourselves ???
       else:
 	agg = [(rep,cfi)]
       # FIXME: need to query peers asyncronously
@@ -317,8 +326,8 @@ class Gossip(object):
         peer.query(umis,id,qual,ttl-1)
 	agg.append(peer.assess(rep,cfi))
       rep,cfi = aggregate(agg)
-    elif self.cirq.seen(umis):
-      return None	# already answered for this umis
+    elif False and self.cirq.seen(umis):
+      return None	# already answered for this umis ???
 
     # Here, I need to decide whether to send a reject or a header.
     # Give the person deploying an option to never send a reject, but always
@@ -355,7 +364,6 @@ class Gossip(object):
 	log.info("UMIS not in hash table.")
     finally:
       self.lock.release()
-
 
   def do_request(self,buf):
     # Get input from SSL connection, store info in rep db if not already there.
