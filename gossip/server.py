@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.2  2005/12/24 00:43:44  customdesigned
+# handle missing umis
+#
 # Revision 1.1.1.1  2005/11/07 21:17:56  customdesigned
 # Python GOSSiP Domain Reputation Service
 #
@@ -14,6 +17,7 @@ import math
 import logging
 import sys
 import array
+import thread
 
 log = logging.getLogger('gossip')
 
@@ -75,7 +79,7 @@ class Observations(object):
     ph =  ham / N
     ps = spam / N
 
-    log.debug("P(h) = %f   P(s) = %f"%(ph, ps))
+    log.info("P(h) = %f   P(s) = %f"%(ph, ps))
     num =     math.exp(k * (ph - ps))
     denom = 1 + math.exp(k * (ph - ps))
 
@@ -165,34 +169,40 @@ class CircularQueue(object):
       except KeyError: pass
     rh = rhash(umis,id,ptr_rseen)
     rseen[ptr_rseen] = rh
+    self.hashtab[umis] = rh
     ptr_rseen += 1
     if ptr_rseen == len(rseen): ptr_rseen=0
     self.ptr_rseen = ptr_rseen
-    self.hashtab[umis] = rh
 
 class Gossip(object):
 
   def __init__(self,dbname,size):
     self.dbp = shelve.open(dbname,'c')
     self.cirq = CircularQueue(size)
+    self.lock = thread.allocate_lock()
 
   def query(self,umis,id,qual,ttl):
-    dbp = self.dbp
-    id = id + ':' + qual
-    if not dbp.has_key(id):
-      op = Observations()
-      dbp[id] = op
-      log.info("ID %s stored." % id)
-    else:
-      log.info("ID %s already in db." % id)
-      op = dbp[id]
+    self.lock.acquire()
+    try:
+      dbp = self.dbp
+      id = id + ':' + qual
+      if not dbp.has_key(id):
+	op = Observations()
+	dbp[id] = op
+	log.info("ID %s stored." % id)
+      else:
+	log.info("ID %s already in db." % id)
+	op = dbp[id]
 
-    # Here's where I need to compute reputation and confidence based on the
-    # data I have for this ID.
-    rep = op.reputation()
-    cfi = op.confidence()
+      # Here's where I need to compute reputation and confidence based on the
+      # data I have for this ID.
+      rep = op.reputation()
+      cfi = op.confidence()
+      self.cirq.add(umis,id)
+    finally:
+      self.lock.release()
     log.info("reputation score is: %f,%f"%(rep,cfi))
-    self.cirq.add(umis,id)
+
     # Here, I need to decide whether to send a reject or a header.
     # Give the person deploying an option to never send a reject, but always
     # a header.  Otherwise, have a threshhold of reputation below which
@@ -202,28 +212,32 @@ class Gossip(object):
 
   def feedback(self,umis,spam):
     "Set the spam status of a recently seen umis."
-    key = self.cirq.lookup(umis)
-    if key:
-      dbp = self.dbp
-      log.debug("rec'd umis for feedback...%s"%umis)
-      try:
-	op = dbp[key]
-	new = False
-      except KeyError:
-	op = Observations()
-	new = True
-      if spam == 'Yes':
-        op.setspam(1)
-      elif spam == 'No':
-	op.setspam(0)
+    self.lock.acquire()
+    try:
+      key = self.cirq.lookup(umis)
+      if key:
+	dbp = self.dbp
+	log.debug("rec'd umis for feedback...%s"%umis)
+	try:
+	  op = dbp[key]
+	  new = False
+	except KeyError:
+	  op = Observations()
+	  new = True
+	if spam == 'Yes':
+	  op.setspam(1)
+	elif spam == 'No':
+	  op.setspam(0)
+	else:
+	  op.setspam(int(spam))
+	if new:
+	  log.debug("new data stored: %s"%op)
+	dbp[key] = op
+	dbp.sync()
       else:
-        op.setspam(int(spam))
-      if new:
-	log.debug("new data stored: %s"%op)
-      dbp[key] = op
-      dbp.sync()
-    else:
-      log.info("UMIS not in hash table.")
+	log.info("UMIS not in hash table.")
+    finally:
+      self.lock.release()
 
   def do_request(self,buf):
     # Get input from SSL connection, store info in rep db if not already there.
