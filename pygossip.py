@@ -10,6 +10,7 @@ import gossip
 import logging
 
 from gossip.SocketServer import Daemon
+from gossip.server import Gossip,Peer
 
 REP_DB = "test.db"
 RSEEN_MAX = 30
@@ -28,12 +29,23 @@ def main():
     { 'port': '11900', 'rep_db': '/var/log/milter/gossip4.db' }
   )
   cp.read(config_path)
-  gport = cp.getint('gossip','port')
+  gport = cp.getint('gossip','listen')
   db = cp.get('gossip','rep_db')
+  if cp.has_option('gossip','peers'):
+    peers = [q.strip() for q in self.get('gossip','peers').split(',')]
+  else:
+    peers = []
   gossip = Gossip(db,RSEEN_MAX)
-  server_addr = ('0.0.0.0',gport)
 
-  server = Daemon(addr='0.0.0.0',port=gport,gossip)
+  for p in peers:
+    a = p.rsplit(':',1)
+    if len(a) > 1:
+      host,port = a[0],int(a[1])
+    else:
+      host,port = a[0],11900
+    gossip.peers.append(Peer(host,port))
+
+  server = Daemon(gossip,addr='0.0.0.0',port=gport)
   server.run()
 
 if __name__ == '__main__':

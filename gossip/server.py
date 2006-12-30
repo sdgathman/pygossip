@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.6  2006/12/27 18:51:02  customdesigned
+# Make Observations.__setstate__ compatible with old format.
+#
 # Revision 1.5  2006/12/27 04:08:26  customdesigned
 # Server running in pymilter again.
 #
@@ -58,6 +61,11 @@ class Peer(object):
     self.cfi = int(cfi)
     return self.rep,self.cfi
 
+  def is_me(self,connect_ip):
+    iplist = self.client.get_iplist()
+    print connect_ip,iplist
+    return connect_ip in iplist
+
   def assess(self,rep,cfi):
     "Compare most recent opinion with our opinion and update reputation"
     if self.cfi >= 1 and int(cfi) >= 1:
@@ -78,9 +86,9 @@ class Peer(object):
       self.obs.setspam(0)
     p_rep = self.obs.reputation()
     p_res = self.rep * self.cfi/100.0
-    # should peer agreement reputation affect cfi instead of res?
+    # should peer reputation affect message cfi instead of res?
     if p_rep < 0:
-      p_res *= -p_rep/100
+      p_res *= -p_rep/100.0
     return p_res,self.cfi
 
 def average(l):
@@ -104,14 +112,16 @@ class Observations(object):
   "Record up to maxobs observations of an id."
   __slots__ = (
     'bptr','bcnt','hcnt','ncnt','maxobs','firstseen','lastseen','obs','null')
+
   def __getstate__(self):
     return self.bptr,self.bcnt,self.hcnt,self.ncnt,self.maxobs,	\
       self.firstseen,self.lastseen,self.obs,self.null
+
   def __setstate__(self,s):
     try:
       self.bptr,self.bcnt,self.hcnt,self.ncnt,self.maxobs, \
 	self.firstseen,self.lastseen,self.obs,self.null = s
-    except ValueError:
+    except ValueError:	# old format
       self.bptr = s['bptr']
       self.bcnt = s['bcnt']
       self.hcnt = s['hcnt']
@@ -231,7 +241,7 @@ class Observations(object):
 	>>> c.setspam(1); c.hcnt,c.bcnt,c.ncnt
 	(2, 3, 1)
     """
-    thisbit = 2**self.bptr
+    thisbit = 1L<<self.bptr
     prev = not (self.obs & thisbit)	# slot was previously spam
     notnull = not (self.null & thisbit)
     if v < 0:
@@ -305,13 +315,16 @@ class CircularQueue(object):
 
 class Gossip(object):
 
-  def __init__(self,dbname,size):
+  def __init__(self,dbname,size,threshold=(-50,1)):
     self.dbp = shelve.open(dbname,'c')
     self.cirq = CircularQueue(size)
     self.lock = thread.allocate_lock()
     self.peers = []
+    self.minrep, self.mincfi = threshold
 
-  def query(self,umis,id,qual,ttl):
+  def query(self,umis,id,qual,ttl,connect_ip=None):
+
+    # find/create database record for id.
     self.lock.acquire()
     try:
       dbp = self.dbp
@@ -319,69 +332,84 @@ class Gossip(object):
       if not dbp.has_key(id):
 	op = Observations()
 	dbp[id] = op
-	log.info("ID %s stored." % id)
+	dbp.sync()
+	new = True
       else:
-	log.info("ID %s already in db." % id)
 	op = dbp[id]
-
-      # Here's where I need to compute reputation and confidence based on the
-      # data I have for this ID.
-      rep = op.reputation()
-      cfi = op.confidence()
+	new = False
     finally:
       self.lock.release()
+    if new:
+      log.info("ID %s stored." % id)
+    else:
+      log.info("ID %s already in db." % id)
+
+    # compute reputation and confidence based on the data for this ID.
+    rep = op.reputation()
+    cfi = op.confidence()
     log.info("reputation score is: %f,%f"%(rep,cfi))
+
+    # See how peers, if any, feel about id.
     if ttl > 0 and self.peers:
       if self.cirq.seen(umis):
-        agg = [] # already answered for this umis, exclude ourselves ???
+	# already answered for this umis, exclude ourselves.  Intended
+	# to prevent query loops.  Should also compare connect ip
+	# (FIXME: how to get?) to peers.
+        agg = []
       else:
 	agg = [(rep,cfi)]
       # FIXME: need to query peers asyncronously
       for peer in self.peers:
+        if peer.is_me(connect_ip): continue
         peer.query(umis,id,qual,ttl-1)
 	agg.append(peer.assess(rep,cfi))
       rep,cfi = aggregate(agg)
-    elif self.cirq.seen(umis):
-      return None	# already answered for this umis ???
-    self.cirq.add(umis,id)
 
-    # Here, I need to decide whether to send a reject or a header.
+    if not self.cirq.seen(umis):
+      self.cirq.add(umis,id)
+
+    # Decide whether to send a reject or a header.
     # Give the person deploying an option to never send a reject, but always
     # a header.  Otherwise, have a threshhold of reputation below which
     # rejects are sent instead of headers.
-    return 'PREPEND','X-GOSSiP', "%s,%d,%d" % (umis,rep,cfi)
+    if rep < self.minrep and cfi > self.mincfi:
+      res = 'REJECT'
+    else:
+      res = 'PREPEND'
+    return res,'X-GOSSiP',"%s,%d,%d" % (umis,rep,cfi)
     # I should also append a comma, the rep score, comma, the confidence
 
   def feedback(self,umis,spam):
     "Set the spam status of a recently seen umis."
-    self.lock.acquire()
-    try:
-      key = self.cirq.remove(umis)
-      if key:
-	dbp = self.dbp
-	log.debug("rec'd umis for feedback...%s"%umis)
+    key = self.cirq.remove(umis)
+    if key:
+      log.debug("rec'd umis for feedback...%s"%umis)
+      if spam == 'Yes':
+	vote = -1
+      elif spam == 'No':
+	vote = 1
+      else:
+	vote = int(spam) * -2 + 1
+      dbp = self.dbp
+      self.lock.acquire()
+      try:
 	try:
 	  op = dbp[key]
 	  new = False
 	except KeyError:
 	  op = Observations()
 	  new = True
-	if spam == 'Yes':
-	  op.setspam(-1)
-	elif spam == 'No':
-	  op.setspam(1)
-	else:
-	  op.setspam(int(spam) * -2 + 1)
-	if new:
-	  log.debug("new data stored: %s"%op)
+	op.setspam(vote)
 	dbp[key] = op
 	dbp.sync()
-      else:
-	log.info("UMIS not in hash table.")
-    finally:
-      self.lock.release()
+      finally:
+	self.lock.release()
+      if new:
+	log.debug("new data stored: %s"%op)
+    else:
+      log.info("UMIS not in hash table: %s",umis)
 
-  def do_request(self,buf):
+  def do_request(self,buf,connect_ip=None):
     # Get input from SSL connection, store info in rep db if not already there.
     buf = buf.strip()
     log.info(buf)
@@ -390,7 +418,7 @@ class Gossip(object):
     if qtype == 'Q':
       a,b,c,umis = e[1:5]
       ttl = int(c)
-      resp = '%s %s: %s' % self.query(umis,a,b,ttl)
+      resp = '%s %s: %s' % self.query(umis,a,b,ttl,connect_ip)
       log.info(resp)
       return resp
     if qtype == 'F':

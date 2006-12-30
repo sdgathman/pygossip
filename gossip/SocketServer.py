@@ -29,7 +29,7 @@ class Handler(SocketServer.BaseRequestHandler):
       try:
         buf = self.readline()
 	if buf == '': break
-        resp = gossip.do_request(buf)
+        resp = gossip.do_request(buf,self.client_address)
 	if resp:
 	  ssl.send(resp+'\012\012')
       except EOFError:

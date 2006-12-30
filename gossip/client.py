@@ -13,6 +13,11 @@ class Gossip(object):
     # can handle it.
     self.test = test
 
+  def get_iplist(self):
+    host,port = self.node
+    host,aliases,iplist = socket.gethostbyname_ex(host)
+    return iplist
+
   def query(self,umis,id,qual,ttl=1):
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock.connect(self.node)
