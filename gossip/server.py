@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.7  2006/12/30 21:42:48  customdesigned
+# Ready to test peer implementation.
+#
 # Revision 1.6  2006/12/27 18:51:02  customdesigned
 # Make Observations.__setstate__ compatible with old format.
 #
@@ -27,6 +30,7 @@ import logging
 import sys
 import array
 import thread
+import client
 
 log = logging.getLogger('gossip')
 
@@ -50,7 +54,7 @@ MAX_PEER_OBS = 100
 class Peer(object):
 
   def __init__(self,host,port):
-    self.obs = server.Observations(MAX_PEER_OBS)
+    self.obs = Observations(MAX_PEER_OBS)
     self.client = client.Gossip(host,port)
 
   def query(self,umis,id,qual,ttl):

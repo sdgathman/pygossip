@@ -6,10 +6,11 @@
 import ConfigParser
 import SocketServer
 import sys
+import time
 import gossip
 import logging
 
-from gossip.SocketServer import Daemon
+from gossip.GossipServer import Daemon
 from gossip.server import Gossip,Peer
 
 REP_DB = "test.db"
@@ -23,7 +24,7 @@ logging.basicConfig(
 )
 
 def main():
-  config_path = ("gossip.cfg","/etc/mail/gossip.cfg")
+  config_path = ("pygossip.cfg","/etc/mail/pygossip.cfg")
 
   cp = ConfigParser.ConfigParser(
     { 'port': '11900', 'rep_db': '/var/log/milter/gossip4.db' }
@@ -32,10 +33,10 @@ def main():
   gport = cp.getint('gossip','listen')
   db = cp.get('gossip','rep_db')
   if cp.has_option('gossip','peers'):
-    peers = [q.strip() for q in self.get('gossip','peers').split(',')]
+    peers = [q.strip() for q in cp.get('gossip','peers').split(',')]
   else:
     peers = []
-  gossip = Gossip(db,RSEEN_MAX)
+  svr = Gossip(db,RSEEN_MAX)
 
   for p in peers:
     a = p.rsplit(':',1)
@@ -43,10 +44,12 @@ def main():
       host,port = a[0],int(a[1])
     else:
       host,port = a[0],11900
-    gossip.peers.append(Peer(host,port))
+    svr.peers.append(Peer(host,port))
 
-  server = Daemon(gossip,addr='0.0.0.0',port=gport)
+  server = Daemon(svr,addr='0.0.0.0',port=gport)
+  gossip.server.log.info("pysrs startup")
   server.run()
+  gossip.server.log.info("pysrs shutdown")
 
 if __name__ == '__main__':
   if len(sys.argv) > 1:
