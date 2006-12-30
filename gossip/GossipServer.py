@@ -21,7 +21,7 @@ class Handler(SocketServer.BaseRequestHandler):
     return buf[:pos]
 
   def handle(self):
-    log.debug("connect")
+    log.debug("connect %s",self.client_address)
     ssl = self.request
     gossip = self.server.gossip
     self.buf = ''
@@ -35,6 +35,8 @@ class Handler(SocketServer.BaseRequestHandler):
       except EOFError:
         log.debug("Ending connection")
 	return
+      except ValueError:
+        log.info("Bad req: "+buf)
 
 class Daemon(object):
 
