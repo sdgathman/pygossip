@@ -38,7 +38,6 @@ class Handler(SocketServer.BaseRequestHandler):
 	if buf == '': break
         resp = gossip.do_request(buf,self.client_address)
 	if resp:
-	  log.debug(resp)
 	  self.send(resp+'\012\012')
       except EOFError:
         log.debug("Ending connection")

@@ -23,6 +23,15 @@ logging.basicConfig(
         datefmt='%Y%b%d %H:%M:%S'
 )
 
+def getaddr(s):
+    a = s.rsplit(':',1)
+    if len(a) > 1:
+      return a[0],int(a[1])
+    try:
+      return '0.0.0.0',int(a[0])
+    except:
+      return a[0],11900
+
 def main():
   config_path = ("pygossip.cfg","/etc/mail/pygossip.cfg")
 
@@ -30,7 +39,7 @@ def main():
     { 'port': '11900', 'rep_db': '/var/log/milter/gossip4.db' }
   )
   cp.read(config_path)
-  gport = cp.getint('gossip','listen')
+  ghost,gport = getaddr(cp.get('gossip','listen'))
   db = cp.get('gossip','rep_db')
   if cp.has_option('gossip','peers'):
     peers = [q.strip() for q in cp.get('gossip','peers').split(',')]
@@ -39,14 +48,10 @@ def main():
   svr = Gossip(db,RSEEN_MAX)
 
   for p in peers:
-    a = p.rsplit(':',1)
-    if len(a) > 1:
-      host,port = a[0],int(a[1])
-    else:
-      host,port = a[0],11900
+    host,port = getaddr(p)
     svr.peers.append(Peer(host,port))
 
-  server = Daemon(svr,addr='0.0.0.0',port=gport)
+  server = Daemon(svr,addr=ghost,port=gport)
   gossip.server.log.info("pysrs startup")
   server.run()
   gossip.server.log.info("pysrs shutdown")

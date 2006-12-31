@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.9  2006/12/31 02:48:40  customdesigned
+# Make sure all of response is sent.
+#
 # Revision 1.8  2006/12/30 22:07:37  customdesigned
 # Testing server and peers.
 #
@@ -56,20 +59,24 @@ MAX_PEER_OBS = 100
 
 class Peer(object):
 
-  def __init__(self,host,port):
+  def __init__(self,host,port=11900):
     self.obs = Observations(MAX_PEER_OBS)
     self.client = client.Gossip(host,port)
+    self.host = host
 
   def query(self,umis,id,qual,ttl):
     res = self.client.query(umis,id,qual,ttl)
+    log.debug("Peer result: %s"%res)
     p_umis,rep,cfi = res[2].split(',')
     assert p_umis == umis
     self.rep = int(rep)
     self.cfi = int(cfi)
+    log.info("Peer %s says %d,%d" % (self.host,self.rep,self.cfi))
     return self.rep,self.cfi
 
   def is_me(self,connect_ip):
     iplist = self.client.get_iplist()
+    if not connect_ip: return False
     host,port = connect_ip
     return host in iplist
 
@@ -108,12 +115,14 @@ def average(l):
 
 def aggregate(agg):
   "Aggregate reputation and confidence scores"
-  avg,avg2 = average((rep,rep * rep) for rep,cfi in agg)
+  avg,avg2 = average([(rep,rep * rep) for rep,cfi in agg])
   var = avg2 - avg * avg	# variance
   n = len(agg)
   stddev = math.sqrt(var * n / (n - 1))	# sample standard deviation
+  if stddev < 0.001:
+    return average(agg)
   # remove outliers (more than 3 * stddev from mean) and return means
-  return average((rep,cfi) for rep,cfi in agg if abs(rep - avg)/stddev <= 3)
+  return average([(rep,cfi) for rep,cfi in agg if abs(rep - avg)/stddev <= 3])
 
 class Observations(object):
   "Record up to maxobs observations of an id."
@@ -322,12 +331,13 @@ class CircularQueue(object):
 
 class Gossip(object):
 
-  def __init__(self,dbname,size,threshold=(-50,1)):
+  def __init__(self,dbname,size,threshold=(-50,1),saveall=False):
     self.dbp = shelve.open(dbname,'c')
     self.cirq = CircularQueue(size)
     self.lock = thread.allocate_lock()
     self.peers = []
     self.minrep, self.mincfi = threshold
+    self.saveall = saveall
 
   def query(self,umis,id,qual,ttl,connect_ip=None):
 
@@ -335,26 +345,26 @@ class Gossip(object):
     self.lock.acquire()
     try:
       dbp = self.dbp
-      id = id + ':' + qual
-      if not dbp.has_key(id):
-	op = Observations()
-	dbp[id] = op
-	dbp.sync()
-	new = True
-      else:
-	op = dbp[id]
+      key = id + ':' + qual
+      try:
+        op = dbp[key]
 	new = False
+      except KeyError:
+        if self.saveall:
+	  op = Observations()	# establish first seen for id
+	  dbp[key] = op
+	  dbp.sync()
+        new = True
     finally:
       self.lock.release()
     if new:
-      log.info("ID %s stored." % id)
+      rep,cfi = 0.0,0.0
     else:
-      log.info("ID %s already in db." % id)
+      rep = op.reputation()
+      cfi = op.confidence()
+      log.info("ID %s reputation: %f,%f"%(key,rep,cfi))
 
     # compute reputation and confidence based on the data for this ID.
-    rep = op.reputation()
-    cfi = op.confidence()
-    log.info("reputation score is: %f,%f"%(rep,cfi))
 
     # See how peers, if any, feel about id.
     if ttl > 0 and self.peers:
@@ -373,7 +383,7 @@ class Gossip(object):
       rep,cfi = aggregate(agg)
 
     if not self.cirq.seen(umis):
-      self.cirq.add(umis,id)
+      self.cirq.add(umis,key)
 
     # Decide whether to send a reject or a header.
     # Give the person deploying an option to never send a reject, but always
@@ -389,32 +399,32 @@ class Gossip(object):
   def feedback(self,umis,spam):
     "Set the spam status of a recently seen umis."
     key = self.cirq.remove(umis)
-    if key:
-      log.debug("rec'd umis for feedback...%s"%umis)
-      if spam == 'Yes':
-	vote = -1
-      elif spam == 'No':
-	vote = 1
-      else:
-	vote = int(spam) * -2 + 1
-      dbp = self.dbp
-      self.lock.acquire()
-      try:
-	try:
-	  op = dbp[key]
-	  new = False
-	except KeyError:
-	  op = Observations()
-	  new = True
-	op.setspam(vote)
-	dbp[key] = op
-	dbp.sync()
-      finally:
-	self.lock.release()
-      if new:
-	log.debug("new data stored: %s"%op)
+    if not key:
+      log.info("UMIS not found: %s",umis)
+      return
+    log.info("ID %s feedback: %s"%(key,spam))
+    if spam == 'Yes':
+      vote = -1
+    elif spam == 'No':
+      vote = 1
     else:
-      log.info("UMIS not in hash table: %s",umis)
+      vote = int(spam) * -2 + 1
+    dbp = self.dbp
+    self.lock.acquire()
+    try:
+      try:
+	op = dbp[key]
+	new = False
+      except KeyError:
+	op = Observations()
+	new = True
+      op.setspam(vote)
+      dbp[key] = op
+      dbp.sync()
+    finally:
+      self.lock.release()
+    if new:
+      log.debug("new data stored: %s"%op)
 
   def do_request(self,buf,connect_ip=None):
     # Get input from SSL connection, store info in rep db if not already there.
