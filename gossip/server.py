@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.8  2006/12/30 22:07:37  customdesigned
+# Testing server and peers.
+#
 # Revision 1.7  2006/12/30 21:42:48  customdesigned
 # Ready to test peer implementation.
 #
@@ -67,8 +70,8 @@ class Peer(object):
 
   def is_me(self,connect_ip):
     iplist = self.client.get_iplist()
-    print connect_ip,iplist
-    return connect_ip in iplist
+    host,port = connect_ip
+    return host in iplist
 
   def assess(self,rep,cfi):
     "Compare most recent opinion with our opinion and update reputation"

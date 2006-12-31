@@ -20,6 +20,13 @@ class Handler(SocketServer.BaseRequestHandler):
     self.buf = buf[pos+1:]
     return buf[:pos]
 
+  def send(self,s):
+    ssl = self.request
+    n = ssl.send(s)
+    while n < len(s):
+      if n > 0: s = s[n:]
+      n = ssl.send(s)
+
   def handle(self):
     log.debug("connect %s",self.client_address)
     ssl = self.request
@@ -31,7 +38,8 @@ class Handler(SocketServer.BaseRequestHandler):
 	if buf == '': break
         resp = gossip.do_request(buf,self.client_address)
 	if resp:
-	  ssl.send(resp+'\012\012')
+	  log.debug(resp)
+	  self.send(resp+'\012\012')
       except EOFError:
         log.debug("Ending connection")
 	return
