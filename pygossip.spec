@@ -91,6 +91,14 @@ cat >$RPM_BUILD_ROOT/etc/logrotate.d/pygossip <<'EOF'
 }
 EOF
 
+%post
+/sbin/chkconfig --add pygossip
+
+%preun
+if [ $1 = 0 ]; then
+  /sbin/chkconfig --del pygossip
+fi
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
