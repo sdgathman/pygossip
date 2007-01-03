@@ -27,12 +27,13 @@ pidof() {
 
 RETVAL=0
 prog="pygossip"
+progdir="/usr/lib/pymilter"
 
 start() {
 	# Start daemons.
 
 	echo -n "Starting $prog: "
-	daemon --check pygossip --user mail /var/log/milter/pygossip.sh
+	daemon --check pygossip --user mail ${progdir}/pygossip.sh
 	RETVAL=$?
 	echo
 	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/pygossip

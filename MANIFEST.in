@@ -8,3 +8,4 @@ include pygossip.spec
 include MANIFEST.in
 include COPYING
 include CHANGES
+include gossip/

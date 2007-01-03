@@ -52,9 +52,9 @@ def main():
     svr.peers.append(Peer(host,port))
 
   server = Daemon(svr,addr=ghost,port=gport)
-  gossip.server.log.info("pysrs startup")
+  gossip.server.log.info("pygossip startup")
   server.run()
-  gossip.server.log.info("pysrs shutdown")
+  gossip.server.log.info("pygossip shutdown")
 
 if __name__ == '__main__':
   if len(sys.argv) > 1:

@@ -3,6 +3,7 @@
 %define release 1
 %define sysvinit pygossip.rc
 %define python python2.4
+%define progdir /usr/lib/pymilter
 
 Summary: Python GOSSiP distributed domain reputation service
 Name: %{name}
@@ -47,19 +48,20 @@ cp pygossip.cfg $RPM_BUILD_ROOT/etc/mail
 # We use same log dir as milter since we also are a mail add-on
 mkdir -p $RPM_BUILD_ROOT/var/log/milter
 mkdir -p $RPM_BUILD_ROOT/var/run/milter
+mkdir -p $RPM_BUILD_ROOT%{progdir}
 # AIX requires daemons to *not* fork, sysvinit requires that they do!
 %ifos aix4.1
-cat >$RPM_BUILD_ROOT/var/log/milter/pygossip.sh <<'EOF'
+cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
 #!/bin/sh
 cd /var/log/milter
 exec /usr/local/bin/python pygossip.py >>pygossip.log 2>&1
 EOF
 %else
-cat >$RPM_BUILD_ROOT/var/log/milter/pygossip.sh <<'EOF'
+cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
 #!/bin/sh
 cd /var/log/milter
 exec >>pygossip.log 2>&1
-%{python} pygossip.py &
+%{python} %{progdir}/pygossip.py &
 echo $! >/var/run/milter/pygossip.pid
 EOF
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
@@ -69,12 +71,16 @@ ed $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip <<'EOF'
 c
 python="%{python}"
 .
+/^progdir=/
+c
+progdir="%{progdir}"
+.
 w
 q
 EOF
 %endif
-chmod a+x $RPM_BUILD_ROOT/var/log/milter/pygossip.sh
-cp -p pygossip.py $RPM_BUILD_ROOT/var/log/milter
+chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh
+cp -p pygossip.py $RPM_BUILD_ROOT%{progdir}
 
 # logfile rotation
 mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
@@ -95,5 +101,5 @@ rm -rf $RPM_BUILD_ROOT
 %dir %attr(-,mail,mail)/var/log/milter
 /etc/logrotate.d/pygossip
 /etc/rc.d/init.d/pygossip
-/var/log/milter/pygossip.sh
-/var/log/milter/pygossip.py
+%{progdir}/pygossip.sh
+%{progdir}/pygossip.py
