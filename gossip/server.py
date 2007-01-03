@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.10  2006/12/31 04:50:16  customdesigned
+# Peer working.
+#
 # Revision 1.9  2006/12/31 02:48:40  customdesigned
 # Make sure all of response is sent.
 #
@@ -37,8 +40,7 @@ import sys
 import array
 import thread
 import client
-
-log = logging.getLogger('gossip')
+from gossip import log
 
 MAXOBS=1024
 
@@ -66,6 +68,7 @@ class Peer(object):
 
   def query(self,umis,id,qual,ttl):
     res = self.client.query(umis,id,qual,ttl)
+    if not res: return None
     log.debug("Peer result: %s"%res)
     p_umis,rep,cfi = res[2].split(',')
     assert p_umis == umis
@@ -106,7 +109,7 @@ class Peer(object):
     return p_res,self.cfi
 
 def average(l):
-  sum,sum2 = 0,0
+  sum,sum2 = 0.0,0.0
   for x,y in l:
     sum += x
     sum2 += y
@@ -115,14 +118,17 @@ def average(l):
 
 def aggregate(agg):
   "Aggregate reputation and confidence scores"
+  n = len(agg)
+  if n < 4:
+    # A little numeric experimentation suggests that you need at least
+    # 10 samples before the code below will remove any outliers.
+    # However, it is easy to prove for 2, and I'm pretty sure about 3.
+    return average(agg)
   avg,avg2 = average([(rep,rep * rep) for rep,cfi in agg])
   var = avg2 - avg * avg	# variance
-  n = len(agg)
   stddev = math.sqrt(var * n / (n - 1))	# sample standard deviation
-  if stddev < 0.001:
-    return average(agg)
   # remove outliers (more than 3 * stddev from mean) and return means
-  return average([(rep,cfi) for rep,cfi in agg if abs(rep - avg)/stddev <= 3])
+  return average([(rep,cfi) for rep,cfi in agg if abs(rep - avg) <= 3*stddev])
 
 class Observations(object):
   "Record up to maxobs observations of an id."
@@ -378,8 +384,8 @@ class Gossip(object):
       # FIXME: need to query peers asyncronously
       for peer in self.peers:
         if peer.is_me(connect_ip): continue
-        peer.query(umis,id,qual,ttl-1)
-	agg.append(peer.assess(rep,cfi))
+	if peer.query(umis,id,qual,ttl-1):
+	  agg.append(peer.assess(rep,cfi))
       rep,cfi = aggregate(agg)
 
     if not self.cirq.seen(umis):

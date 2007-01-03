@@ -4,6 +4,7 @@
 # See COPYING for details
 
 import socket
+from gossip import log
 
 class Gossip(object):
 
@@ -19,17 +20,21 @@ class Gossip(object):
     return iplist
 
   def query(self,umis,id,qual,ttl=1):
-    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    sock.connect(self.node)
-    req = "Q:%s:%s:%d:%s\012\012" % (id,qual,ttl,umis)
-    if self.test:
-      b = len(req)/2
-      sock.send(req[:b])
-      sock.send(req[b:])
-    else:
-      sock.send(req)
-    buf = sock.recv(256)
-    return buf.strip().split()
+    try:
+      sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+      sock.connect(self.node)
+      req = "Q:%s:%s:%d:%s\012\012" % (id,qual,ttl,umis)
+      if self.test:
+	b = len(req)/2
+	sock.send(req[:b])
+	sock.send(req[b:])
+      else:
+	sock.send(req)
+      buf = sock.recv(256)
+      return buf.strip().split()
+    except socket.error:
+      log.exception('%s: socket error',self.node[0])
+      return None
 
   def feedback(self,umis,spam):
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)

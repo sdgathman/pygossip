@@ -5,6 +5,9 @@
 
 import md5
 import base64
+import logging
+
+log = logging.getLogger('gossip')
 
 __all__ = [ 'umis' ]
 
