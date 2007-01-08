@@ -48,9 +48,9 @@ class GossipTestCase(unittest.TestCase):
     self.assertEqual(wavg,wmean)
     self.assertEqual(avgw,meanw)
 
-  def testZeroConfidence(self):
+  def testConfidence(self):
     # lonely low confidence scores thrown out
-    data = ( (76,10), (0,0) )
+    data = ( (76,10), (0,0.5) )
     self.assertEquals((76.0,10.0),gossip.server.aggregate(data))
     # all zero confidence presents a unique problem (sum of weights = 0)
     data = ( (76,0), (0,0) )
