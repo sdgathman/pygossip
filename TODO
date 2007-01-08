@@ -1,1 +1,3 @@
 Use persistent connections for peers.
+
+Purge old records nightly.

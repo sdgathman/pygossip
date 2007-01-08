@@ -31,6 +31,26 @@ class GossipTestCase(unittest.TestCase):
       os.setspam(random.randint(-1,1))
     self.assertTrue(os.ok())
 
+  def testAggregate(self):
+    data = (
+      (100,20), (100,7), (94,16), (90,31), (90,20), (88,24), (86,7),
+      (83,6), (83,30), (80,66), (80,5), (77,43), (74,43), (70,23),
+      (69,64), (67,6), (56,18)
+    )
+    wmean,meanw,wnvar = gossip.server.weighted_stats(data)
+    self.assertEqual(79.5,round(wmean,2))
+    self.assertEqual(109.97,round(wnvar / 16,2))
+    wavg,avgw = gossip.server.weighted_average(data)
+    self.assertEqual(wavg,wmean)
+    self.assertEqual(avgw,meanw)
+    # nothing thrown out with above dataset
+    wavg,avgw = gossip.server.aggregate(data)
+    self.assertEqual(wavg,wmean)
+    self.assertEqual(avgw,meanw)
+    # lonely low confidence scores thrown out
+    data = ( (76,10), (0,0) )
+    self.assertEquals((76.0,10.0),gossip.server.aggregate(data))
+
 def suite():
   s = unittest.makeSuite(GossipTestCase,'test')
   s.addTest(doctest.DocTestSuite(gossip.server))

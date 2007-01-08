@@ -9,6 +9,7 @@ import sys
 import time
 import gossip
 import logging
+import signal
 
 from gossip.GossipServer import Daemon
 from gossip.server import Gossip,Peer
@@ -52,8 +53,10 @@ def main():
     svr.peers.append(Peer(host,port))
 
   server = Daemon(svr,addr=ghost,port=gport)
+  signal.signal(signal.SIGTERM,lambda x,y: sys.exit(0))
   gossip.server.log.info("pygossip startup")
-  server.run()
+  try: server.run()
+  except SystemExit: pass
   gossip.server.log.info("pygossip shutdown")
 
 if __name__ == '__main__':

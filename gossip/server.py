@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.11  2007/01/03 04:06:33  customdesigned
+# Beta release.
+#
 # Revision 1.10  2006/12/31 04:50:16  customdesigned
 # Peer working.
 #
@@ -101,34 +104,41 @@ class Peer(object):
 	self.obs.setspam(0)
     else:
       self.obs.setspam(0)
-    p_rep = self.obs.reputation()
-    p_res = self.rep * self.cfi/100.0
-    # should peer reputation affect message cfi instead of res?
-    if p_rep < 0:
-      p_res *= -p_rep/100.0
-    return p_res,self.cfi
+    p_rep = self.obs.reputation()	# peer reputation
+    p_cfi = self.obs.confidence()	# confidence in peer reputation
+    return p_rep,p_cfi
 
-def average(l):
-  sum,sum2 = 0.0,0.0
-  for x,y in l:
-    sum += x
-    sum2 += y
+def weighted_average(l):
+  # return weighted mean, mean weight
+  sumx,sumw = 0.0,0.0
+  for x,w in l:
+    sumx += w * x
+    sumw += w
+  return sumx/sumw,sumw/len(l)
+
+def weighted_stats(l):
+  # return weighted mean, mean weight, weighted variance * n
+  wsum,wsum2,sumw = 0.0,0.0,0.0
+  for x,w in l:
+    wsum += w * x
+    wsum2 += w * x * x
+    sumw += w
+  wmean = wsum / sumw
   n = len(l)
-  return sum/n,sum2/n
+  meanw = sumw / n
+  wvar = wsum2 / meanw - n * wmean * wmean
+  return wmean,meanw,wvar
 
 def aggregate(agg):
   "Aggregate reputation and confidence scores"
   n = len(agg)
-  if n < 4:
-    # A little numeric experimentation suggests that you need at least
-    # 10 samples before the code below will remove any outliers.
-    # However, it is easy to prove for 2, and I'm pretty sure about 3.
-    return average(agg)
-  avg,avg2 = average([(rep,rep * rep) for rep,cfi in agg])
-  var = avg2 - avg * avg	# variance
-  stddev = math.sqrt(var * n / (n - 1))	# sample standard deviation
+  if n < 1: return None
+  if n == 1: return agg[0]
+  wavg,wcfi,wvar = weighted_stats(agg)
+  stddev = math.sqrt(wvar / (n - 1))	# sample standard deviation
   # remove outliers (more than 3 * stddev from mean) and return means
-  return average([(rep,cfi) for rep,cfi in agg if abs(rep - avg) <= 3*stddev])
+  return weighted_average([(rep,cfi) for rep,cfi in agg
+  	if abs(rep - wavg) <= 3*stddev])
 
 class Observations(object):
   "Record up to maxobs observations of an id."
@@ -376,17 +386,22 @@ class Gossip(object):
     if ttl > 0 and self.peers:
       if self.cirq.seen(umis):
 	# already answered for this umis, exclude ourselves.  Intended
-	# to prevent query loops.  Should also compare connect ip
-	# (FIXME: how to get?) to peers.
+	# to prevent query loops.  Is this really needed?
         agg = []
       else:
 	agg = [(rep,cfi)]
       # FIXME: need to query peers asyncronously
       for peer in self.peers:
         if peer.is_me(connect_ip): continue
-	if peer.query(umis,id,qual,ttl-1):
-	  agg.append(peer.assess(rep,cfi))
-      rep,cfi = aggregate(agg)
+	try:
+	  p_res,p_cfi = peer.query(umis,id,qual,ttl-1)
+	  p_rep,_ = peer.assess(rep,cfi)
+	  if p_rep < 0:	# if we don't usually agree with peer
+	    p_cfi *= (100+p_rep) / 100.0 # reduce our confidence in result
+	  agg.append((p_res,p_cfi))
+	except: continue
+      if agg:
+	rep,cfi = aggregate(agg)
 
     if not self.cirq.seen(umis):
       self.cirq.add(umis,key)
