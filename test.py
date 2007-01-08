@@ -47,9 +47,14 @@ class GossipTestCase(unittest.TestCase):
     wavg,avgw = gossip.server.aggregate(data)
     self.assertEqual(wavg,wmean)
     self.assertEqual(avgw,meanw)
+
+  def testZeroConfidence(self):
     # lonely low confidence scores thrown out
     data = ( (76,10), (0,0) )
     self.assertEquals((76.0,10.0),gossip.server.aggregate(data))
+    # all zero confidence presents a unique problem (sum of weights = 0)
+    data = ( (76,0), (0,0) )
+    self.assertEquals((38.0,0.0),gossip.server.aggregate(data))
 
 def suite():
   s = unittest.makeSuite(GossipTestCase,'test')

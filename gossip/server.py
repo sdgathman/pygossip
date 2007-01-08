@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.13  2007/01/08 22:41:17  customdesigned
+# Use offset to handle 0 confidence.
+#
 # Revision 1.12  2007/01/08 17:59:55  customdesigned
 # Use confidence as weight when aggregating scores.
 #
@@ -118,7 +121,12 @@ def weighted_average(l,offset=0):
     w += offset	# shift 0-100 cfi to avoid 0 weight
     sumx += w * x
     sumw += w
-  return sumx/sumw,sumw/len(l)
+  if sumw:
+    try:
+      return sumx/sumw,sumw/len(l)
+    except ZeroDivisionError: pass
+  avg,_ = weighted_average([(x,1) for x,w in l])
+  return avg,0.0
 
 def weighted_stats(l,offset=0):
   # return weighted mean, mean weight, weighted population variance 
@@ -128,10 +136,15 @@ def weighted_stats(l,offset=0):
     wsum += w * x
     wsum2 += w * x * x
     sumw += w
-  wmean = wsum / sumw
-  meanw = sumw / len(l) - offset
-  wvar = wsum2 / sumw - wmean * wmean
-  return wmean,meanw,wvar
+  if sumw:
+    try:
+      wmean = wsum / sumw
+      meanw = sumw / len(l) - offset
+      wvar = wsum2 / sumw - wmean * wmean
+      return wmean,meanw,wvar
+    except ZeroDivisionError: pass
+  avg,_,var = weighted_stats([(x,1) for x,w in l])
+  return avg,0.0,var
 
 def aggregate(agg,offset=0):
   "Aggregate reputation and confidence scores"
@@ -405,7 +418,7 @@ class Gossip(object):
 	  agg.append((p_res,p_cfi))
 	except: continue
       if agg:
-	rep,cfi = aggregate(agg,offset=0.001)
+	rep,cfi = aggregate(agg)
 
     if not self.cirq.seen(umis):
       self.cirq.add(umis,key)
