@@ -37,9 +37,9 @@ class GossipTestCase(unittest.TestCase):
       (83,6), (83,30), (80,66), (80,5), (77,43), (74,43), (70,23),
       (69,64), (67,6), (56,18)
     )
-    wmean,meanw,wnvar = gossip.server.weighted_stats(data)
+    wmean,meanw,wvar = gossip.server.weighted_stats(data)
     self.assertEqual(79.5,round(wmean,2))
-    self.assertEqual(109.97,round(wnvar / 16,2))
+    self.assertEqual(109.97,round(wvar * 17 / 16,2))
     wavg,avgw = gossip.server.weighted_average(data)
     self.assertEqual(wavg,wmean)
     self.assertEqual(avgw,meanw)

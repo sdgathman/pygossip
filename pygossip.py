@@ -19,7 +19,7 @@ RSEEN_MAX = 30
 
 logging.basicConfig(
         stream=sys.stderr,
-        level=logging.DEBUG,
+        level=logging.INFO,
         format='%(asctime)s %(message)s',
         datefmt='%Y%b%d %H:%M:%S'
 )
@@ -37,16 +37,17 @@ def main():
   config_path = ("pygossip.cfg","/etc/mail/pygossip.cfg")
 
   cp = ConfigParser.ConfigParser(
-    { 'port': '11900', 'rep_db': '/var/log/milter/gossip4.db' }
+    { 'port': '11900', 'rep_db': 'gossip4.db', 'qsize': '100' }
   )
   cp.read(config_path)
   ghost,gport = getaddr(cp.get('gossip','listen'))
   db = cp.get('gossip','rep_db')
+  qsize = cp.get('gossip','qsize')
   if cp.has_option('gossip','peers'):
     peers = [q.strip() for q in cp.get('gossip','peers').split(',')]
   else:
     peers = []
-  svr = Gossip(db,RSEEN_MAX)
+  svr = Gossip(db,qsize)
 
   for p in peers:
     host,port = getaddr(p)

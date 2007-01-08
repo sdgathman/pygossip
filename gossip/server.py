@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.12  2007/01/08 17:59:55  customdesigned
+# Use confidence as weight when aggregating scores.
+#
 # Revision 1.11  2007/01/03 04:06:33  customdesigned
 # Beta release.
 #
@@ -108,37 +111,38 @@ class Peer(object):
     p_cfi = self.obs.confidence()	# confidence in peer reputation
     return p_rep,p_cfi
 
-def weighted_average(l):
+def weighted_average(l,offset=0):
   # return weighted mean, mean weight
   sumx,sumw = 0.0,0.0
   for x,w in l:
+    w += offset	# shift 0-100 cfi to avoid 0 weight
     sumx += w * x
     sumw += w
   return sumx/sumw,sumw/len(l)
 
-def weighted_stats(l):
-  # return weighted mean, mean weight, weighted variance * n
+def weighted_stats(l,offset=0):
+  # return weighted mean, mean weight, weighted population variance 
   wsum,wsum2,sumw = 0.0,0.0,0.0
   for x,w in l:
+    w += offset	# shift 0-100 cfi to avoid 0 weight
     wsum += w * x
     wsum2 += w * x * x
     sumw += w
   wmean = wsum / sumw
-  n = len(l)
-  meanw = sumw / n
-  wvar = wsum2 / meanw - n * wmean * wmean
+  meanw = sumw / len(l) - offset
+  wvar = wsum2 / sumw - wmean * wmean
   return wmean,meanw,wvar
 
-def aggregate(agg):
+def aggregate(agg,offset=0):
   "Aggregate reputation and confidence scores"
   n = len(agg)
   if n < 1: return None
   if n == 1: return agg[0]
-  wavg,wcfi,wvar = weighted_stats(agg)
-  stddev = math.sqrt(wvar / (n - 1))	# sample standard deviation
+  wavg,wcfi,wvar = weighted_stats(agg,offset)
+  stddev = math.sqrt(wvar * n / (n - 1))	# sample standard deviation
   # remove outliers (more than 3 * stddev from mean) and return means
   return weighted_average([(rep,cfi) for rep,cfi in agg
-  	if abs(rep - wavg) <= 3*stddev])
+  	if abs(rep - wavg) <= 3*stddev],offset)
 
 class Observations(object):
   "Record up to maxobs observations of an id."
@@ -401,7 +405,7 @@ class Gossip(object):
 	  agg.append((p_res,p_cfi))
 	except: continue
       if agg:
-	rep,cfi = aggregate(agg)
+	rep,cfi = aggregate(agg,offset=0.001)
 
     if not self.cirq.seen(umis):
       self.cirq.add(umis,key)
