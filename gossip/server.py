@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.14  2007/01/08 22:57:09  customdesigned
+# Handle all zero weight without offset.
+#
 # Revision 1.13  2007/01/08 22:41:17  customdesigned
 # Use offset to handle 0 confidence.
 #
@@ -87,6 +90,7 @@ class Peer(object):
     return self.rep,self.cfi
 
   def is_me(self,connect_ip):
+    "Return true if incoming connection matches this peer."
     iplist = self.client.get_iplist()
     if not connect_ip: return False
     host,port = connect_ip
@@ -115,7 +119,20 @@ class Peer(object):
     return p_rep,p_cfi
 
 def weighted_average(l,offset=0):
-  # return weighted mean, mean weight
+  """Compute weighted mean, mean weight.
+
+  l      -- A sequence of (value,weight) tuples.
+  offset -- An offset added to weight preventing zero
+  	    weights from being completely ignored.
+
+  >>> [round(x,1) for x in weighted_average([(10,3),(15,2)],offset=1)]
+  [12.1, 2.5]
+  >>> weighted_average([(1,2)])
+  (1.0, 2.0)
+  >>> weighted_average([])
+  (0.0, 0.0)
+  """
+  if not l: return (0.0,0.0)
   sumx,sumw = 0.0,0.0
   for x,w in l:
     w += offset	# shift 0-100 cfi to avoid 0 weight
@@ -123,13 +140,26 @@ def weighted_average(l,offset=0):
     sumw += w
   if sumw:
     try:
-      return sumx/sumw,sumw/len(l)
+      return sumx/sumw,sumw/len(l) - offset
     except ZeroDivisionError: pass
   avg,_ = weighted_average([(x,1) for x,w in l])
   return avg,0.0
 
 def weighted_stats(l,offset=0):
-  # return weighted mean, mean weight, weighted population variance 
+  """Compute weighted mean, mean weight, weighted population variance.
+
+  l      -- A sequence of (value,weight) tuples.
+  offset -- An offset added to weight preventing zero
+  	    weights from being completely ignored.
+
+  >>> [round(x,2) for x in weighted_stats([(10,3),(15,2)])]
+  [12.0, 2.5, 6.0]
+  >>> weighted_stats([(1,2)])
+  (1.0, 2.0, 0.0)
+  >>> weighted_stats([])
+  (0.0, 0.0, 0.0)
+  """
+  if not l: return (0.0,0.0,0.0)
   wsum,wsum2,sumw = 0.0,0.0,0.0
   for x,w in l:
     w += offset	# shift 0-100 cfi to avoid 0 weight
@@ -147,9 +177,9 @@ def weighted_stats(l,offset=0):
   return avg,0.0,var
 
 def aggregate(agg,offset=0):
-  "Aggregate reputation and confidence scores"
+  """Aggregate reputation and confidence scores."""
   n = len(agg)
-  if n < 1: return None
+  if n < 1: return (0.0,0,0)
   if n == 1: return agg[0]
   wavg,wcfi,wvar = weighted_stats(agg,offset)
   stddev = math.sqrt(wvar * n / (n - 1))	# sample standard deviation
@@ -158,7 +188,7 @@ def aggregate(agg,offset=0):
   	if abs(rep - wavg) <= 3*stddev],offset)
 
 class Observations(object):
-  "Record up to maxobs observations of an id."
+  """Record up to maxobs observations of an id."""
   __slots__ = (
     'bptr','bcnt','hcnt','ncnt','maxobs','firstseen','lastseen','obs','null')
 
@@ -194,7 +224,7 @@ class Observations(object):
     self.null = 0L
 
   def ok(self):
-    "Return true if internally consistent"
+    """Return true if internally consistent."""
     if self.hcnt == count_ones(self.obs & ~self.null) \
     	and self.ncnt == count_ones(self.null) \
 	and 0 <= self.bptr < self.maxobs \
@@ -225,6 +255,7 @@ class Observations(object):
   #i is a given identity.
 
   def reputation(self):
+    """Compute reputation score."""
     n = self.bcnt
     if not n: return 0.0
     #N = float(self.maxobs)
@@ -264,7 +295,7 @@ class Observations(object):
   # NOTE, we take epoch as time identity was first seen
 
   def confidence(self):
-    "compute confidence"
+    """Compute confidence score."""
     N = float(self.maxobs)
     epoch = self.firstseen
     now = time.time()
@@ -323,14 +354,14 @@ class rhash(object):
     self.ptr = ptr
 
 class CircularQueue(object):
-  "Remembers the id for the last N umis"
+  """Remembers the id for the last N umis."""
   def __init__(self,max):
     self.rseen = [None] * max
     self.ptr_rseen = 0
     self.hashtab = {}
 
   def remove(self,umis):
-    "Return (and remove) id corresponding to umis, or None"
+    """Return (and remove) id corresponding to umis, or None"""
     rh = self.hashtab.pop(umis,None)
     if rh:
       self.rseen[rh.ptr] = None
@@ -338,13 +369,13 @@ class CircularQueue(object):
     return None
 
   def seen(self,umis):
-    "Return True if umis was recently seen."
+    """Return True if umis was recently seen."""
     if self.hashtab.get(umis,None):
       return True
     return False
 
   def add(self,umis,id):
-    "Add umis,id to cache"
+    """Add umis,id to cache"""
     ptr_rseen = self.ptr_rseen
     rseen = self.rseen
     log.debug("rseen[%i] = %s"%(ptr_rseen,rseen[ptr_rseen]))
@@ -364,9 +395,9 @@ class CircularQueue(object):
 
 class Gossip(object):
 
-  def __init__(self,dbname,size,threshold=(-50,1),saveall=False):
+  def __init__(self,dbname,qsize,threshold=(-50,1),saveall=False):
     self.dbp = shelve.open(dbname,'c')
-    self.cirq = CircularQueue(size)
+    self.cirq = CircularQueue(qsize)
     self.lock = thread.allocate_lock()
     self.peers = []
     self.minrep, self.mincfi = threshold
@@ -431,8 +462,8 @@ class Gossip(object):
       res = 'REJECT'
     else:
       res = 'PREPEND'
+    # append a comma, the rep score, comma, the confidence
     return res,'X-GOSSiP',"%s,%d,%d" % (umis,rep,cfi)
-    # I should also append a comma, the rep score, comma, the confidence
 
   def feedback(self,umis,spam):
     "Set the spam status of a recently seen umis."

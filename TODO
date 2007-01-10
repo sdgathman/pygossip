@@ -1,3 +1,21 @@
-Use persistent connections for peers.
+Client Socket errors:
+
+Timeout: disable Peer/client for a while before retrying.
+
+2007Jan08 20:26:11 spidey2: socket error
+Traceback (most recent call last):
+  File "/home/stuart/pygossip/gossip/client.py", line 25, in query
+  File "<string>", line 1, in connect 
+timeout: timed out
+
+Refused: minimal delay, retry very soon, every time even
+
+2007Jan09 10:25:12 spidey2: socket error
+Traceback (most recent call last):
+  File "/home/stuart/pygossip/gossip/client.py", line 25, in query
+  File "<string>", line 1, in connect
+error: (111, 'Connection refused')
+
+Use persistent connections for client.py.
 
 Purge old records nightly.
