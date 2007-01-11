@@ -9,6 +9,7 @@ import random
 import gossip.server
 
 class GossipTestCase(unittest.TestCase):
+
   def testObservations(self):
     os = gossip.server.Observations()
     for i in xrange(100): os.setspam(-1)

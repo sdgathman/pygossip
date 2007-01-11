@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.15  2007/01/10 02:20:47  customdesigned
+# Doc comments, aggregate edge conditions.
+#
 # Revision 1.14  2007/01/08 22:57:09  customdesigned
 # Handle all zero weight without offset.
 #
@@ -152,7 +155,7 @@ def weighted_stats(l,offset=0):
   offset -- An offset added to weight preventing zero
   	    weights from being completely ignored.
 
-  >>> [round(x,2) for x in weighted_stats([(10,3),(15,2)])]
+  >>> [round(x,1) for x in weighted_stats([(10,3),(15,2)])]
   [12.0, 2.5, 6.0]
   >>> weighted_stats([(1,2)])
   (1.0, 2.0, 0.0)
@@ -177,11 +180,16 @@ def weighted_stats(l,offset=0):
   return avg,0.0,var
 
 def aggregate(agg,offset=0):
-  """Aggregate reputation and confidence scores."""
+  """Aggregate reputation and confidence scores.
+  >>> [round(x,1) for x in aggregate([(-76.159416,0.219053),(0,0)])]
+  [-76.1, 0.2]
+  """
   n = len(agg)
   if n < 1: return (0.0,0,0)
   if n == 1: return agg[0]
   wavg,wcfi,wvar = weighted_stats(agg,offset)
+  if wvar <= 0: # only one non-zero cfi
+    return weighted_average([(rep,cfi) for rep,cfi in agg if cfi > 0])
   stddev = math.sqrt(wvar * n / (n - 1))	# sample standard deviation
   # remove outliers (more than 3 * stddev from mean) and return means
   return weighted_average([(rep,cfi) for rep,cfi in agg

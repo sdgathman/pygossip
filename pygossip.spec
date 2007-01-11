@@ -34,7 +34,6 @@ by pymilter.
 See http://gossip-project.sourceforge.net/
     http://pymilter.sourceforge.net/
 
-
 %prep
 %setup
 
