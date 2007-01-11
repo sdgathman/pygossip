@@ -78,8 +78,8 @@ class Gossip(object):
         sock.close()
 	self.sock = None
       return buf.strip().split()
-    except socket.error:
-      log.exception('%s: socket error',self.node[0])
+    except socket.error,x:
+      log.error('%s: %s',self.node[0],x)
       if sock: sock.close()
       self.sock = None
       return None
