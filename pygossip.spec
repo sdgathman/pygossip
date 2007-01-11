@@ -1,5 +1,5 @@
 %define name pygossip
-%define version 0.1
+%define version 0.2
 %define release 1
 %define sysvinit pygossip.rc
 %define python python2.4

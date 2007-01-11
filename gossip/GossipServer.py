@@ -13,14 +13,14 @@ class Handler(SocketServer.BaseRequestHandler):
   def readline(self):
     ssl = self.request
     buf = self.buf
-    pos = buf.find('\012')
+    pos = buf.find('\n')
     while pos < 0:
       buf += ssl.recv(256)
-      pos = buf.find('\012')
+      pos = buf.find('\n')
     self.buf = buf[pos+1:]
     return buf[:pos]
 
-  def send(self,s):
+  def sendall(self,s):
     ssl = self.request
     n = ssl.send(s)
     while n < len(s):
@@ -35,10 +35,12 @@ class Handler(SocketServer.BaseRequestHandler):
     while True:
       try:
         buf = self.readline()
-	if buf == '': break
+	if buf == '': continue
         resp = gossip.do_request(buf,self.client_address)
 	if resp:
-	  self.send(resp+'\012\012')
+	  ssl.sendall(resp+'\n\n')
+	else:
+          ssl.sendall('\n\n')
       except EOFError:
         log.debug("Ending connection")
 	return

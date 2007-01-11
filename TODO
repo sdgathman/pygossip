@@ -1,3 +1,6 @@
+Allow multiple feedback - allowing users to correct content filter judgement.
+Keep UMIS in queue until it falls off, instead of removing on first feedback.
+
 Client Socket errors:
 
 Timeout: disable Peer/client for a while before retrying.

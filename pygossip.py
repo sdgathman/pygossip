@@ -10,6 +10,7 @@ import time
 import gossip
 import logging
 import signal
+import socket
 
 from gossip.GossipServer import Daemon
 from gossip.server import Gossip,Peer
@@ -42,7 +43,7 @@ def main():
   cp.read(config_path)
   ghost,gport = getaddr(cp.get('gossip','listen'))
   db = cp.get('gossip','rep_db')
-  qsize = cp.get('gossip','qsize')
+  qsize = int(cp.get('gossip','qsize'))
   if cp.has_option('gossip','peers'):
     peers = [q.strip() for q in cp.get('gossip','peers').split(',')]
   else:
@@ -53,10 +54,13 @@ def main():
     host,port = getaddr(p)
     svr.peers.append(Peer(host,port))
 
-  server = Daemon(svr,addr=ghost,port=gport)
-  signal.signal(signal.SIGTERM,lambda x,y: sys.exit(0))
-  gossip.server.log.info("pygossip startup")
-  try: server.run()
+  try:
+    server = Daemon(svr,addr=ghost,port=gport)
+    signal.signal(signal.SIGTERM,lambda x,y: sys.exit(0))
+    gossip.server.log.info("pygossip startup")
+    server.run()
+  except socket.error,x:
+    gossip.server.log.error(x)
   except SystemExit: pass
   gossip.server.log.info("pygossip shutdown")
 
