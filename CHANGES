@@ -1,5 +1,8 @@
 0.2	Beta release
-	
+	Persistent connections for server
+	Lots of bug fixes for peer protocol.
+	Aggregation math improved - confidence used for weighted average,
+	rather than adjusting reputation toward 0.
 0.1	Initial alpha release
 	The library works in a production milter
 	The server works in testing
