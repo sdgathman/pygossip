@@ -103,6 +103,7 @@ fi
 rm -rf $RPM_BUILD_ROOT
 
 %files -f INSTALLED_FILES
+%doc README CHANGES COPYING TODO
 %defattr(-,root,root)
 %config /etc/mail/pygossip.cfg
 %dir %attr(-,mail,mail)/var/run/milter

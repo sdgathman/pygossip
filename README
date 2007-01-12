@@ -1,0 +1,25 @@
+This is a python implementation of the GOSSiP protocol.
+Author: Stuart D. Gathman
+Copyright 2005,2006,2007 Business Management Systems
+This code is licensed under the GNU GPL, see COPYING.
+
+http://gossip-project.sourceforge.net/
+
+The python package provides client and server library modules.  The
+server module stores reputations as Observations objects in a shelve
+database.  The server module is used by the bms.py milter in pymilter,
+and when a senders spam/ham ratio gets too high, their emails are
+rejected at MAIL FROM.  This is much more efficient than scanning 
+and quarantining the message, and keeps clutter out of the quarantine
+so that false positives are more likely to be noticed.
+
+The RPM installs a pygossip service, which can aggregate reputation
+scores from multiple peer servers.  Support for this is still experimental,
+although it is running on two production servers.
+
+Reputation is computed from the ratio of spam to ham over the past 
+1000 observations and ranges from -100 to +100.  A confidence score 
+reflects the number of observations and the freshness of the data
+and ranges from 0 to 100.  Peer reputation is computed from how often
+the peer agrees with us, and confidence in the peers opinion is adjusted
+accordingly.
