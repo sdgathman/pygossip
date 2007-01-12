@@ -63,6 +63,7 @@ exec >>pygossip.log 2>&1
 %{python} %{progdir}/pygossip.py &
 echo $! >/var/run/milter/pygossip.pid
 EOF
+
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 cp %{sysvinit} $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip
 ed $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip <<'EOF'

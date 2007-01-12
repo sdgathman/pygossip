@@ -1,3 +1,4 @@
+# Test gossip server by sending queries from command line.
 import sys
 import time
 import gossip

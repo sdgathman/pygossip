@@ -1,4 +1,5 @@
 include test.py
+include tc.py
 include pygossip.py
 include setup.py
 include setup.cfg

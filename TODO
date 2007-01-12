@@ -1,24 +1,10 @@
 Allow multiple feedback - allowing users to correct content filter judgement.
 Keep UMIS in queue until it falls off, instead of removing on first feedback.
 
-Client Socket errors:
-
-Timeout: disable Peer/client for a while before retrying.
-
-2007Jan08 20:26:11 spidey2: socket error
-Traceback (most recent call last):
-  File "/home/stuart/pygossip/gossip/client.py", line 25, in query
-  File "<string>", line 1, in connect 
-timeout: timed out
-
-Refused: minimal delay, retry very soon, every time even
-
-2007Jan09 10:25:12 spidey2: socket error
-Traceback (most recent call last):
-  File "/home/stuart/pygossip/gossip/client.py", line 25, in query
-  File "<string>", line 1, in connect
-error: (111, 'Connection refused')
-
-Use persistent connections for client.py.
+Sometimes pygossip server goes into a loop.  Seems to have started
+happening since clients started using persistent connections.
 
 Purge old records nightly.
+
+DONE Client Socket errors:
+DONE Use persistent connections for client.py.
