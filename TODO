@@ -1,3 +1,6 @@
+Debugging python loop with threads:
+http://jcalderone.livejournal.com/28224.html
+
 Allow multiple feedback - allowing users to correct content filter judgement.
 Keep UMIS in queue until it falls off, instead of removing on first feedback.
 

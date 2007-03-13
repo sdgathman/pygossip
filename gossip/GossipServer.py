@@ -15,7 +15,9 @@ class Handler(SocketServer.BaseRequestHandler):
     buf = self.buf
     pos = buf.find('\n')
     while pos < 0:
-      buf += ssl.recv(256)
+      s = ssl.recv(256)
+      if not s: break
+      buf += s
       pos = buf.find('\n')
     self.buf = buf[pos+1:]
     return buf[:pos]

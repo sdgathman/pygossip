@@ -9,11 +9,10 @@
 # pidfile: /var/run/milter/pygossip.pid
 
 python="python2.4"
-progdir="/usr/lib/pymilter"
 
 pidof() {
 	set - ""
-	if set - `ps -e -o pid,cmd | grep "${python} ${progdir}/pygossip.py"` &&
+	if set - `ps -e -o pid,cmd | grep "${python} pygossip.py"` &&
 	  [ "$2" != "grep" ]; then
 	  echo $1
 	  return 0

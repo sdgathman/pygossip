@@ -48,36 +48,30 @@ cp pygossip.cfg $RPM_BUILD_ROOT/etc/mail
 mkdir -p $RPM_BUILD_ROOT/var/log/milter
 mkdir -p $RPM_BUILD_ROOT/var/run/milter
 mkdir -p $RPM_BUILD_ROOT%{progdir}
+cp -p pygossip_purge.py $RPM_BUILD_ROOT%{progdir}
 # AIX requires daemons to *not* fork, sysvinit requires that they do!
 %ifos aix4.1
 cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
 #!/bin/sh
-cd /var/log/milter
-exec /usr/local/bin/python pygossip.py >>pygossip.log 2>&1
+cd %{progdir}
+exec /usr/local/bin/python pygossip.py >>/var/log/milter/pygossip.log 2>&1
 EOF
 %else
 cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
 #!/bin/sh
 cd /var/log/milter
 exec >>pygossip.log 2>&1
-%{python} %{progdir}/pygossip.py &
+if test -s pygossip.py; then
+  : # use version in log dir if it exists for debugging
+else
+  cd %{progdir}
+fi
+%{python} pygossip.py &
 echo $! >/var/run/milter/pygossip.pid
 EOF
 
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 cp %{sysvinit} $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip
-ed $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip <<'EOF'
-/^python=/
-c
-python="%{python}"
-.
-/^progdir=/
-c
-progdir="%{progdir}"
-.
-w
-q
-EOF
 %endif
 chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh
 cp -p pygossip*.py $RPM_BUILD_ROOT%{progdir}
