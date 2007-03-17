@@ -5,6 +5,7 @@
 
 import ConfigParser
 import SocketServer
+import os
 import sys
 import time
 import gossip
@@ -38,11 +39,11 @@ def main():
   config_path = ("pygossip.cfg","/etc/mail/pygossip.cfg")
 
   cp = ConfigParser.ConfigParser(
-    { 'port': '11900', 'rep_db': 'gossip4.db', 'qsize': '100',
-    'datadir': '/var/log/milter' }
+    { 'port': '11900', 'rep_db': 'gossip4.db', 'qsize': '100' }
   )
   cp.read(config_path)
-  os.chdir(cp.get('gossip','datadir'))
+  if cp.has_option('gossip','datadir'):
+    os.chdir(cp.get('gossip','datadir'))
   ghost,gport = getaddr(cp.get('gossip','listen'))
   db = cp.get('gossip','rep_db')
   qsize = int(cp.get('gossip','qsize'))

@@ -59,10 +59,10 @@ EOF
 %else
 cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
 #!/bin/sh
-cd /var/log/milter
-exec >>pygossip.log 2>&1
-if test -s pygossip.py; then
-  : # use version in log dir if it exists for debugging
+datadir=/var/log/milter
+exec >>${datadir}/pygossip.log 2>&1
+if test -s ${datadir}/pygossip.py; then
+  cd %{datadir} # use version in log dir if it exists for debugging
 else
   cd %{progdir}
 fi
@@ -72,6 +72,19 @@ EOF
 
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 cp %{sysvinit} $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip
+ed $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip <<'EOF'
+/^python=/
+c
+python="%{python}"
+.
+/^progdir=/
+c
+progdir="%{progdir}"
+.
+w
+q
+EOF
+
 %endif
 chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh
 cp -p pygossip*.py $RPM_BUILD_ROOT%{progdir}

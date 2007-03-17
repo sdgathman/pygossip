@@ -9,6 +9,7 @@
 # pidfile: /var/run/milter/pygossip.pid
 
 python="python2.4"
+progdir=/usr/lib/pymilter
 
 pidof() {
 	set - ""
