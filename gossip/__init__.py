@@ -11,9 +11,18 @@ log = logging.getLogger('gossip')
 
 __all__ = [ 'umis' ]
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 def umis(id,nonce):
   digest = md5.new(id)
   digest.update(str(nonce))
   return base64.b64encode(digest.digest(),'.$').rstrip('=')
+
+def splitaddr(s):
+    a = s.rsplit(':',1)
+    if len(a) > 1:
+      return a[0],int(a[1])
+    try:
+      return '0.0.0.0',int(a[0])
+    except:
+      return a[0],11900

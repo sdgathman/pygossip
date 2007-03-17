@@ -26,15 +26,6 @@ logging.basicConfig(
         datefmt='%Y%b%d %H:%M:%S'
 )
 
-def getaddr(s):
-    a = s.rsplit(':',1)
-    if len(a) > 1:
-      return a[0],int(a[1])
-    try:
-      return '0.0.0.0',int(a[0])
-    except:
-      return a[0],11900
-
 def main():
   config_path = ("pygossip.cfg","/etc/mail/pygossip.cfg")
 
@@ -44,7 +35,7 @@ def main():
   cp.read(config_path)
   if cp.has_option('gossip','datadir'):
     os.chdir(cp.get('gossip','datadir'))
-  ghost,gport = getaddr(cp.get('gossip','listen'))
+  ghost,gport = gossip.splitaddr(cp.get('gossip','listen'))
   db = cp.get('gossip','rep_db')
   qsize = int(cp.get('gossip','qsize'))
   if cp.has_option('gossip','peers'):
@@ -54,7 +45,7 @@ def main():
   svr = Gossip(db,qsize)
 
   for p in peers:
-    host,port = getaddr(p)
+    host,port = gossip.splitaddr(p)
     svr.peers.append(Peer(host,port))
 
   try:
