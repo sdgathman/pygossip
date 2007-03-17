@@ -77,7 +77,8 @@ class Gossip(object):
       if not self.persistent:
         sock.close()
 	self.sock = None
-      return buf.strip().split()
+      umis,hdr,val = buf.strip().split(None,2)
+      return umis,hdr.rstrip(':'),val
     except socket.error,x:
       log.error('%s: %s',self.node[0],x)
       if sock: sock.close()
