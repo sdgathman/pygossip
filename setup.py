@@ -39,7 +39,7 @@ See http://gossip-project.sourceforge.net/
 	scripts = ['pygossip.py'],
 	keywords = ['GOSSiP','reputation','email'],
 	classifiers = [
-	  'Development Status :: 3 - Alpha',
+	  'Development Status :: 4 - Beta',
 	  'Environment :: No Input/Output (Daemon)',
 	  'Intended Audience :: Developers',
 	  'Intended Audience :: System Administrators',

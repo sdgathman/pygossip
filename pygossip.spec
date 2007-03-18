@@ -120,3 +120,8 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/pygossip.sh
 %{progdir}/pygossip.py
 %{progdir}/pygossip_purge.py
+
+%changelog
+* Sat Mar 17 2007 Stuart Gathman <stuart@bmsi.com> 0.3-1
+- Fix server run loop on client disconnect.
+- Optional datadir, run from /var/log/milter if pygossip present there.

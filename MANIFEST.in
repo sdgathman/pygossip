@@ -1,6 +1,7 @@
 include test.py
 include tc.py
 include pygossip.py
+include pygossip_purge.py
 include setup.py
 include setup.cfg
 include pygossip.cfg
@@ -11,4 +12,4 @@ include COPYING
 include CHANGES
 include README
 include TODO
-include gossip/
+include gossip/*.py
