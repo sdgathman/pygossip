@@ -1,3 +1,6 @@
+0.3	Fix loop in server
+	Make client query result match server (remove extra ':')
+	Optional datadir config
 0.2	Beta release
 	Persistent connections for server
 	Lots of bug fixes for peer protocol.
