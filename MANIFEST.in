@@ -12,4 +12,5 @@ include COPYING
 include CHANGES
 include README
 include TODO
+include *.html
 include gossip/*.py
