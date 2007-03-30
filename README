@@ -3,7 +3,9 @@ Author: Stuart D. Gathman
 Copyright 2005,2006,2007 Business Management Systems
 This code is licensed under the GNU GPL, see COPYING.
 
-http://gossip-project.sourceforge.net/
+Pygossip is based on the GOSSiP project:
+
+  http://gossip-project.sourceforge.net/
 
 The python package provides client and server library modules.  The
 server module stores reputations as Observations objects in a shelve

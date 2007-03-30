@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.16  2007/01/11 20:31:11  customdesigned
+# Another aggregate edge case fixed.
+#
 # Revision 1.15  2007/01/10 02:20:47  customdesigned
 # Doc comments, aggregate edge conditions.
 #
@@ -83,8 +86,8 @@ class Peer(object):
 
   def query(self,umis,id,qual,ttl):
     res = self.client.query(umis,id,qual,ttl)
-    if not res: return None
     log.debug("Peer result: %s"%res)
+    if not res: return None
     p_umis,rep,cfi = res[2].split(',')
     assert p_umis == umis
     self.rep = int(rep)

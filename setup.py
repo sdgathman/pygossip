@@ -43,7 +43,7 @@ See http://gossip-project.sourceforge.net/
 	  'Environment :: No Input/Output (Daemon)',
 	  'Intended Audience :: Developers',
 	  'Intended Audience :: System Administrators',
-	  'License :: OSI Approved :: Python License (CNRI Python License)',
+	  'License :: OSI Approved :: GNU General Public License (GPL)',
 	  'Natural Language :: English',
 	  'Operating System :: OS Independent',
 	  'Programming Language :: Python',
