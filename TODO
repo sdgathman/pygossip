@@ -1,6 +1,7 @@
-Test client in a multi-threaded environment.  Threads share the persistent
-connection, but replies may come out of order and need to be dispatched 
-by UMIS.
+Make GOSSiP protocol asynchronous.  Threads share the persistent
+connection, and the server currently uses a single thread for each
+connection, so it is sufficient to lock the client for each query.  But 
+in the future, replies may come out of order and need to be dispatched by UMIS.
 
 Peer reputation needs to be persistent.  When reset at restart, peers take 
 too long to reach enough confidence to affect the result.
