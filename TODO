@@ -1,3 +1,6 @@
+Peer reputation needs to be persistent.  When reset at restart, peers take 
+too long to reach enough confidence to affect the result.
+
 Allow multiple feedback - allowing users to correct content filter judgement.
 Keep UMIS in queue until it falls off, instead of removing on first feedback.
 

@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.17  2007/03/30 18:54:27  customdesigned
+# Made sourceforge release.
+#
 # Revision 1.16  2007/01/11 20:31:11  customdesigned
 # Another aggregate edge case fixed.
 #
@@ -80,19 +83,17 @@ MAX_PEER_OBS = 100
 class Peer(object):
 
   def __init__(self,host,port=11900):
-    self.obs = Observations(MAX_PEER_OBS)
     self.client = client.Gossip(host,port)
     self.host = host
+    self.obs = None
 
   def query(self,umis,id,qual,ttl):
     res = self.client.query(umis,id,qual,ttl)
-    log.debug("Peer result: %s"%res)
     if not res: return None
     p_umis,rep,cfi = res[2].split(',')
     assert p_umis == umis
     self.rep = int(rep)
     self.cfi = int(cfi)
-    log.info("Peer %s says %d,%d" % (self.host,self.rep,self.cfi))
     return self.rep,self.cfi
 
   def is_me(self,connect_ip):
@@ -104,24 +105,27 @@ class Peer(object):
 
   def assess(self,rep,cfi):
     "Compare most recent opinion with our opinion and update reputation"
+    if not self.obs:
+      self.obs = Observations(MAX_PEER_OBS)
+    obs = self.obs
     if self.cfi >= 1 and int(cfi) >= 1:
       # disagreed
       if self.rep > 0 and rep < 0:
-	self.obs.setspam(1)
+	obs.setspam(-1)
       elif self.rep < 0 and rep > 0:
-	self.obs.setspam(1)
+	obs.setspam(-1)
       # agreed
       elif self.rep > 0 and rep > 0:
-	self.obs.setspam(-1)
+	obs.setspam(1)
       elif self.rep < 0 and rep < 0:
-	self.obs.setspam(-1)
+	obs.setspam(1)
       # unsure
       else:
-	self.obs.setspam(0)
+	obs.setspam(0)
     else:
-      self.obs.setspam(0)
-    p_rep = self.obs.reputation()	# peer reputation
-    p_cfi = self.obs.confidence()	# confidence in peer reputation
+      obs.setspam(0)
+    p_rep = obs.reputation()	# peer reputation
+    p_cfi = obs.confidence()	# confidence in peer reputation
     return p_rep,p_cfi
 
 def weighted_average(l,offset=0):
@@ -414,25 +418,31 @@ class Gossip(object):
     self.minrep, self.mincfi = threshold
     self.saveall = saveall
 
-  def query(self,umis,id,qual,ttl,connect_ip=None):
-
-    # find/create database record for id.
+  def get_observations(self,key,max=MAXOBS):
+    "Return Observations,newflag for id:qual"
+    op = None
     self.lock.acquire()
     try:
       dbp = self.dbp
-      key = id + ':' + qual
       try:
         op = dbp[key]
 	new = False
       except KeyError:
         if self.saveall:
-	  op = Observations()	# establish first seen for id
+	  op = Observations(max)	# establish first seen for id
 	  dbp[key] = op
 	  dbp.sync()
         new = True
     finally:
       self.lock.release()
-    if new:
+    return op
+
+  def query(self,umis,id,qual,ttl,connect_ip=None):
+
+    # find/create database record for id.
+    key = id + ':' + qual
+    op = self.get_observations(key)
+    if not op:
       rep,cfi = 0.0,0.0
     else:
       rep = op.reputation()
@@ -453,12 +463,18 @@ class Gossip(object):
       for peer in self.peers:
         if peer.is_me(connect_ip): continue
 	try:
+          if not peer.obs:
+            peer.obs = self.get_observations(peer.host+':PEER',MAX_PEER_OBS)
 	  p_res,p_cfi = peer.query(umis,id,qual,ttl-1)
+          log.info("Peer %s says %d,%d" % (peer.host,p_res,p_cfi))
 	  p_rep,_ = peer.assess(rep,cfi)
+          log.info("Peer %s reputation: %f" % (peer.host,p_rep))
 	  if p_rep < 0:	# if we don't usually agree with peer
 	    p_cfi *= (100+p_rep) / 100.0 # reduce our confidence in result
 	  agg.append((p_res,p_cfi))
-	except: continue
+	except:
+          log.exception("Peer %s"%peer.host)
+          continue
       if agg:
 	rep,cfi = aggregate(agg)
 
