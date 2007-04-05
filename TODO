@@ -1,3 +1,7 @@
+Test client in a multi-threaded environment.  Threads share the persistent
+connection, but replies may come out of order and need to be dispatched 
+by UMIS.
+
 Peer reputation needs to be persistent.  When reset at restart, peers take 
 too long to reach enough confidence to affect the result.
 
