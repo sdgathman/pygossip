@@ -74,6 +74,7 @@ class Gossip(object):
   def query(self,umis,id,qual,ttl=1):
     req = "Q:%s:%s:%d:%s%s" % (id,qual,ttl,umis,EOL)
     buf = self.sendreq(req)
+    if not buf: return None
     umis,hdr,val = buf.strip().split(None,2)
     return umis,hdr.rstrip(':'),val
 

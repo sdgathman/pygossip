@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.18  2007/04/05 17:55:55  customdesigned
+# Fix Peer query and assessment.
+#
 # Revision 1.17  2007/03/30 18:54:27  customdesigned
 # Made sourceforge release.
 #
@@ -122,8 +125,8 @@ class Peer(object):
       # unsure
       else:
 	obs.setspam(0)
-    else:
-      obs.setspam(0)
+    #else:
+    #  obs.setspam(0)
     p_rep = obs.reputation()	# peer reputation
     p_cfi = obs.confidence()	# confidence in peer reputation
     return p_rep,p_cfi
@@ -437,6 +440,19 @@ class Gossip(object):
       self.lock.release()
     return op
 
+  def reset(self,id,qual):
+    # find/create database record for id.
+    key = id + ':' + qual
+    self.lock.acquire()
+    try:
+      dbp = self.dbp
+      try:
+        del dbp[key]
+      except KeyError:
+        pass
+    finally:
+      self.lock.release()
+    
   def query(self,umis,id,qual,ttl,connect_ip=None):
 
     # find/create database record for id.
@@ -529,9 +545,9 @@ class Gossip(object):
     e = buf.split(':')
     qtype = e[0]
     if qtype == 'Q':
-      a,b,c,umis = e[1:5]
+      host,qual,c,umis = e[1:5]
       ttl = int(c)
-      resp = '%s %s: %s' % self.query(umis,a,b,ttl,connect_ip)
+      resp = '%s %s: %s' % self.query(umis,host,qual,ttl,connect_ip)
       log.info(resp)
       return resp
     if qtype == 'F':
@@ -539,9 +555,8 @@ class Gossip(object):
       self.feedback(umis,spam)
       return None
     if qtype == 'R':
-      umis,spam = e[1:3]
-      # FIXME: no idea what this is supposed to do
-      #self.do_r(umis,spam)
+      host,qual = e[1:3]
+      self.reset(host,qual)
       return None
     raise ValueError('req: '+buf)
 

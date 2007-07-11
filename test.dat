@@ -72,3 +72,10 @@ Q:example.org:192.168.1.5:5:UMID
 F:UMID:0
 Q:spammer.com:192.168.1.6:5:1234
 F:1234:1
+Q:comcast.net:SPF:1:2345
+F:2345:1
+Q:comcast.net:SPF:1:2346
+R:comcast.net:SPF
+F:2346:1
+Q:comcast.net:SPF:1:2347
+F:2347:1

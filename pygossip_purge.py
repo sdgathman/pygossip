@@ -38,4 +38,4 @@ def purgedb(name,maxage=90):
     newdb.close()
     raise
 
-purgedb('gossip4.db')
+purgedb('gossip4.db',180)
