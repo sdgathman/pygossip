@@ -51,7 +51,6 @@ cp pygossip.cfg $RPM_BUILD_ROOT/etc/mail
 mkdir -p $RPM_BUILD_ROOT/var/log/milter
 mkdir -p $RPM_BUILD_ROOT/var/run/milter
 mkdir -p $RPM_BUILD_ROOT%{progdir}
-#cp -p pygossip_purge.py $RPM_BUILD_ROOT%{progdir}
 # AIX requires daemons to *not* fork, sysvinit requires that they do!
 %ifos aix4.1
 cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
@@ -122,7 +121,9 @@ rm -rf $RPM_BUILD_ROOT
 /etc/rc.d/init.d/pygossip
 %{progdir}/pygossip.sh
 %{progdir}/pygossip.py
+%{progdir}/pygossip.py?
 %{progdir}/pygossip_purge.py
+%{progdir}/pygossip_purge.py?
 
 %changelog
 * Wed Oct 31 2007 Stuart Gathman <stuart@bmsi.com> 0.4-1
