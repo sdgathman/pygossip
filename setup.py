@@ -36,7 +36,7 @@ See http://gossip-project.sourceforge.net/
         url = 'http://bmsi.com/python/pygossip.html',
 	py_modules = [],
         packages = ['gossip'],
-	scripts = ['pygossip.py'],
+	install_dir= '/usr/lib/pymilter',
 	keywords = ['GOSSiP','reputation','email'],
 	classifiers = [
 	  'Development Status :: 4 - Beta',

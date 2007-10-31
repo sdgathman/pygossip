@@ -41,14 +41,17 @@ See http://gossip-project.sourceforge.net/
 python2.4 setup.py build
 
 %install
+rm -rf $RPM_BUILD_ROOT
 python2.4 setup.py install --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+#grep '.pyc$' INSTALLED_FILES | sed -e 's/c$/o/' >>INSTALLED_FILES
+rm -rf $RPM_BUILD_ROOT/usr/bin
 mkdir -p $RPM_BUILD_ROOT/etc/mail
 cp pygossip.cfg $RPM_BUILD_ROOT/etc/mail
 # We use same log dir as milter since we also are a mail add-on
 mkdir -p $RPM_BUILD_ROOT/var/log/milter
 mkdir -p $RPM_BUILD_ROOT/var/run/milter
 mkdir -p $RPM_BUILD_ROOT%{progdir}
-cp -p pygossip_purge.py $RPM_BUILD_ROOT%{progdir}
+#cp -p pygossip_purge.py $RPM_BUILD_ROOT%{progdir}
 # AIX requires daemons to *not* fork, sysvinit requires that they do!
 %ifos aix4.1
 cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
