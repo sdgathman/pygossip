@@ -14,3 +14,6 @@ if cmd == 'Q':
 elif cmd == 'F':
   umis,spam = sys.argv[2:4]
   gossip_node.feedback(umis,spam)
+elif cmd == 'R':
+  domain,qual = sys.argv[2:4]
+  gossip_node.reset(domain,qual)
