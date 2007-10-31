@@ -1,5 +1,5 @@
 %define name pygossip
-%define version 0.3
+%define version 0.4
 %define release 1
 %define sysvinit pygossip.rc
 %define python python2.4
@@ -122,6 +122,9 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/pygossip_purge.py
 
 %changelog
+* Wed Oct 31 2007 Stuart Gathman <stuart@bmsi.com> 0.4-1
+- Add locking to client to prevent mixing results.
+- Add Reset command.
 * Sat Mar 17 2007 Stuart Gathman <stuart@bmsi.com> 0.3-1
 - Fix server run loop on client disconnect.
 - Optional datadir, run from /var/log/milter if pygossip present there.

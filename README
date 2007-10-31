@@ -17,7 +17,7 @@ so that false positives are more likely to be noticed.
 
 The RPM installs a pygossip service, which can aggregate reputation
 scores from multiple peer servers.  Support for this is still experimental,
-although it is running on two production servers.
+although it is running on six production servers.
 
 Reputation is computed from the ratio of spam to ham over the past 
 1000 observations and ranges from -100 to +100.  A confidence score 
