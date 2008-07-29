@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.19  2007/07/11 20:22:40  customdesigned
+# Implement live reset of reputation.
+#
 # Revision 1.18  2007/04/05 17:55:55  customdesigned
 # Fix Peer query and assessment.
 #
@@ -89,10 +92,16 @@ class Peer(object):
     self.client = client.Gossip(host,port)
     self.host = host
     self.obs = None
+    self.down = 0
 
   def query(self,umis,id,qual,ttl):
+    if self.down > 0:
+      self.down -= 1
+      return None
     res = self.client.query(umis,id,qual,ttl)
-    if not res: return None
+    if not res:
+      self.down = 100
+      return None
     p_umis,rep,cfi = res[2].split(',')
     assert p_umis == umis
     self.rep = int(rep)
@@ -481,7 +490,11 @@ class Gossip(object):
 	try:
           if not peer.obs:
             peer.obs = self.get_observations(peer.host+':PEER',MAX_PEER_OBS)
-	  p_res,p_cfi = peer.query(umis,id,qual,ttl-1)
+	  r = peer.query(umis,id,qual,ttl-1)
+	  if not r:
+	    log.info("Peer %s is down" % peer.host)
+	    continue
+	  p_res,p_cfi = r
           log.info("Peer %s says %d,%d" % (peer.host,p_res,p_cfi))
 	  p_rep,_ = peer.assess(rep,cfi)
           log.info("Peer %s reputation: %f" % (peer.host,p_rep))
