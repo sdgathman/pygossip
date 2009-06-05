@@ -82,6 +82,6 @@ class Gossip(object):
     req = "F:%s:%s%s" % (umis,spam,EOL)
     self.sendreq(req,void=True)
 
-  def reply(self,id,qual):
+  def reset(self,id,qual):
     req = "R:%s:%s%s" % (id,qual,EOL)
-    buf = self.sendreq(req)
+    self.sendreq(req,void=True)
