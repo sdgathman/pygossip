@@ -81,3 +81,7 @@ class Gossip(object):
   def feedback(self,umis,spam):
     req = "F:%s:%s%s" % (umis,spam,EOL)
     self.sendreq(req,void=True)
+
+  def reply(self,id,qual):
+    req = "R:%s:%s%s" % (id,qual,EOL)
+    buf = self.sendreq(req)
