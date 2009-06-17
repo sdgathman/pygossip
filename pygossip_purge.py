@@ -12,13 +12,13 @@ def purgedb(name,maxage=90):
   newname = name + '.lock'
   if os.path.exists(newname):
     raise IOError('%s already exists' % newname)
-  newdb = shelve.open(newname,'c')
+  newdb = shelve.open(newname,'c',protocol=2)
   db = shelve.open(name,'r')
   kept = 0
   old = 0
   try:
     changed = False
-    for o in db:		# enumerate all identities
+    for o in db.dict.iterkeys():	# enumerate all identities
       try:
 	obs = db[o]	# get observations
 	if obs.lastseen >= too_old:
@@ -38,4 +38,4 @@ def purgedb(name,maxage=90):
     newdb.close()
     raise
 
-purgedb('gossip4.db',180)
+purgedb('gossip4.db',360)
