@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.20  2008/07/29 02:21:14  customdesigned
+# Report down peer, and retry less often.
+#
 # Revision 1.19  2007/07/11 20:22:40  customdesigned
 # Implement live reset of reputation.
 #
@@ -106,6 +109,7 @@ class Peer(object):
     assert p_umis == umis
     self.rep = int(rep)
     self.cfi = int(cfi)
+    self.umis = umis
     return self.rep,self.cfi
 
   def is_me(self,connect_ip):
@@ -117,28 +121,23 @@ class Peer(object):
 
   def assess(self,rep,cfi):
     "Compare most recent opinion with our opinion and update reputation"
-    if not self.obs:
-      self.obs = Observations(MAX_PEER_OBS)
-    obs = self.obs
     if self.cfi >= 1 and int(cfi) >= 1:
       # disagreed
       if self.rep > 0 and rep < 0:
-	obs.setspam(-1)
+        return -1
       elif self.rep < 0 and rep > 0:
-	obs.setspam(-1)
+	return -1
       # agreed
       elif self.rep > 0 and rep > 0:
-	obs.setspam(1)
+	return 1
       elif self.rep < 0 and rep < 0:
-	obs.setspam(1)
+	return 1
       # unsure
       else:
-	obs.setspam(0)
+	return 0
     #else:
-    #  obs.setspam(0)
-    p_rep = obs.reputation()	# peer reputation
-    p_cfi = obs.confidence()	# confidence in peer reputation
-    return p_rep,p_cfi
+    #  return 0
+    return None
 
 def weighted_average(l,offset=0):
   """Compute weighted mean, mean weight.
@@ -290,11 +289,12 @@ class Observations(object):
     k = 2
     ham = self.hcnt
     spam = n - ham - self.ncnt
-    log.info("ham: %d, spam: %d"%(ham, spam))
+    log.info("ham: %d, spam: %d since: %s",ham, spam,
+        time.strftime('%b %d, %Y',time.localtime(self.firstseen)))
     ph =  ham / N
     ps = spam / N
 
-    log.debug("P(h) = %f   P(s) = %f"%(ph, ps))
+    log.debug("P(h) = %f   P(s) = %f",ph, ps)
     num =     math.exp(k * (ph - ps))
     denom = 1 + math.exp(k * (ph - ps))
 
@@ -405,7 +405,7 @@ class CircularQueue(object):
     """Add umis,id to cache"""
     ptr_rseen = self.ptr_rseen
     rseen = self.rseen
-    log.debug("rseen[%i] = %s"%(ptr_rseen,rseen[ptr_rseen]))
+    log.debug("rseen[%i] = %s",ptr_rseen,rseen[ptr_rseen])
     # Check to see if we're about to overwrite an existing UMIS in the 
     # circular queue.  If we are, remove its entry in the hash table first.
     rh = rseen[ptr_rseen]
@@ -423,7 +423,7 @@ class CircularQueue(object):
 class Gossip(object):
 
   def __init__(self,dbname,qsize,threshold=(-50,1),saveall=False):
-    self.dbp = shelve.open(dbname,'c')
+    self.dbp = shelve.open(dbname,'c',protocol=2)
     self.cirq = CircularQueue(qsize)
     self.lock = thread.allocate_lock()
     self.peers = []
@@ -447,10 +447,12 @@ class Gossip(object):
         new = True
     finally:
       self.lock.release()
+    if new:
+      log.debug("new data stored: %s",op)
     return op
 
   def reset(self,id,qual):
-    # find/create database record for id.
+    # delete database record for id.
     key = id + ':' + qual
     self.lock.acquire()
     try:
@@ -463,7 +465,6 @@ class Gossip(object):
       self.lock.release()
     
   def query(self,umis,id,qual,ttl,connect_ip=None):
-
     # find/create database record for id.
     key = id + ':' + qual
     op = self.get_observations(key)
@@ -472,7 +473,7 @@ class Gossip(object):
     else:
       rep = op.reputation()
       cfi = op.confidence()
-      log.info("ID %s reputation: %f,%f"%(key,rep,cfi))
+      log.info("ID %s reputation: %f,%f",key,rep,cfi)
 
     # compute reputation and confidence based on the data for this ID.
 
@@ -488,24 +489,26 @@ class Gossip(object):
       for peer in self.peers:
         if peer.is_me(connect_ip): continue
 	try:
-          if not peer.obs:
-            peer.obs = self.get_observations(peer.host+':PEER',MAX_PEER_OBS)
 	  r = peer.query(umis,id,qual,ttl-1)
 	  if not r:
-	    log.info("Peer %s is down" % peer.host)
+	    log.info("Peer %s is down", peer.host)
 	    continue
 	  p_res,p_cfi = r
-          log.info("Peer %s says %d,%d" % (peer.host,p_res,p_cfi))
-	  p_rep,_ = peer.assess(rep,cfi)
-          log.info("Peer %s reputation: %f" % (peer.host,p_rep))
+          log.info("Peer %s says %d,%d",peer.host,p_res,p_cfi)
+          p_obs = self.get_observations(peer.host+':PEER',MAX_PEER_OBS)
+	  p_rep = p_obs.reputation()
+          log.info("Peer %s reputation: %f",peer.host,p_rep)
 	  if p_rep < 0:	# if we don't usually agree with peer
 	    p_cfi *= (100+p_rep) / 100.0 # reduce our confidence in result
 	  agg.append((p_res,p_cfi))
 	except:
-          log.exception("Peer %s"%peer.host)
+          log.exception("Peer %s",peer.host)
           continue
       if agg:
 	rep,cfi = aggregate(agg)
+      for peer in self.peers:
+        if peer.is_me(connect_ip): continue
+        self.setspam(peer.host+':PEER',peer.assess(rep,cfi))
 
     if not self.cirq.seen(umis):
       self.cirq.add(umis,key)
@@ -527,13 +530,16 @@ class Gossip(object):
     if not key:
       log.info("UMIS not found: %s",umis)
       return
-    log.info("ID %s feedback: %s"%(key,spam))
+    log.info("ID %s feedback: %s",key,spam)
     if spam == 'Yes':
       vote = -1
     elif spam == 'No':
       vote = 1
     else:
       vote = int(spam) * -2 + 1
+    self.setspam(key,vote)
+
+  def setspam(self,key,vote):
     dbp = self.dbp
     self.lock.acquire()
     try:
@@ -549,7 +555,7 @@ class Gossip(object):
     finally:
       self.lock.release()
     if new:
-      log.debug("new data stored: %s"%op)
+      log.debug("new data stored: %s",op)
 
   def do_request(self,buf,connect_ip=None):
     # Get input from SSL connection, store info in rep db if not already there.
