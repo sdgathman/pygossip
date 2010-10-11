@@ -30,7 +30,7 @@ class Handler(SocketServer.BaseRequestHandler):
       n = ssl.send(s)
 
   def handle(self):
-    log.debug("connect %s",self.client_address)
+    log.info("connect %s",self.client_address)
     ssl = self.request
     gossip = self.server.gossip
     self.buf = ''
@@ -49,15 +49,15 @@ class Handler(SocketServer.BaseRequestHandler):
       except ValueError:
         log.info("Bad req: "+buf)
 
-class Daemon(object):
+class Daemon(SocketServer.ThreadingTCPServer):
+
+  allow_reuse_address = True
 
   def __init__(self,gossip,addr='0.0.0.0',port=11900):
     self.gossip = gossip
     server_addr = (addr,port)
-    self.server = SocketServer.ThreadingTCPServer(server_addr,Handler)
-    self.server.daemon = self
-    self.server.gossip = gossip
+    SocketServer.ThreadingTCPServer.__init__(self,server_addr,Handler)
 
   def run(self):
-    self.server.serve_forever()
+    self.serve_forever()
     #self.server.handle_request()
