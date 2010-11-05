@@ -121,6 +121,8 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/pygossip.py?
 %{progdir}/pygossip_purge.py
 %{progdir}/pygossip_purge.py?
+%{progdir}/tc.py
+%{progdir}/tc.py?
 
 %changelog
 * Wed Oct 31 2007 Stuart Gathman <stuart@bmsi.com> 0.4-1
