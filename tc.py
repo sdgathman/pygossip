@@ -4,7 +4,8 @@ import time
 import gossip
 from gossip.client import Gossip
 
-gossip_node = Gossip(test=True)
+#gossip_node = Gossip(test=True)
+gossip_node = Gossip(host='localhost')
 
 cmd = sys.argv[1]
 if cmd == 'Q':
