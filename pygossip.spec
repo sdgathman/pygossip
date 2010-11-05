@@ -1,14 +1,11 @@
-%define name pygossip
-%define version 0.4
-%define release 1
 %define sysvinit pygossip.rc
 %define python python2.4
 %define progdir /usr/lib/pymilter
 
 Summary: Python GOSSiP distributed domain reputation service
-Name: %{name}
-Version: %{version}
-Release: %{release}
+Name: pygossip
+Version: 0.5
+Release: 1
 Source0: %{name}-%{version}.tar.gz
 License: Python license
 Group: Development/Libraries
