@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.21  2010/10/11 21:07:14  customdesigned
+# Persistent peer reputation.
+#
 # Revision 1.20  2008/07/29 02:21:14  customdesigned
 # Report down peer, and retry less often.
 #
@@ -96,6 +99,7 @@ class Peer(object):
     self.host = host
     self.obs = None
     self.down = 0
+    self.cfi = 0
 
   def query(self,umis,id,qual,ttl):
     if self.down > 0:
