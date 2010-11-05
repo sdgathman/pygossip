@@ -125,6 +125,10 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/tc.py?
 
 %changelog
+* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-1
+- Allow socket reuse for immediate restart
+- Command line client tc.py
+- Persistent peer reputation
 * Wed Oct 31 2007 Stuart Gathman <stuart@bmsi.com> 0.4-1
 - Add locking to client to prevent mixing results.
 - Add Reset command.
