@@ -86,7 +86,7 @@ EOF
 
 %endif
 chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh
-cp -p pygossip*.py $RPM_BUILD_ROOT%{progdir}
+cp -p tc.py pygossip*.py $RPM_BUILD_ROOT%{progdir}
 
 # logfile rotation
 mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
