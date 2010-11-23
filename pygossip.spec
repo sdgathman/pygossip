@@ -5,7 +5,7 @@
 Summary: Python GOSSiP distributed domain reputation service
 Name: pygossip
 Version: 0.5
-Release: 1
+Release: 2
 Source0: %{name}-%{version}.tar.gz
 License: Python license
 Group: Development/Libraries
