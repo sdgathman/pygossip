@@ -125,6 +125,8 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/tc.py?
 
 %changelog
+* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-2
+- Handle missing observations of peer
 * Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-1
 - Allow socket reuse for immediate restart
 - Command line client tc.py
