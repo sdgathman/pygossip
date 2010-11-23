@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.22  2010/11/05 17:24:03  customdesigned
+# init peer cfi
+#
 # Revision 1.21  2010/10/11 21:07:14  customdesigned
 # Persistent peer reputation.
 #
@@ -500,7 +503,10 @@ class Gossip(object):
 	  p_res,p_cfi = r
           log.info("Peer %s says %d,%d",peer.host,p_res,p_cfi)
           p_obs = self.get_observations(peer.host+':PEER',MAX_PEER_OBS)
-	  p_rep = p_obs.reputation()
+          if p_obs:
+            p_rep = p_obs.reputation()
+          else:
+            p_rep = 0.0
           log.info("Peer %s reputation: %f",peer.host,p_rep)
 	  if p_rep < 0:	# if we don't usually agree with peer
 	    p_cfi *= (100+p_rep) / 100.0 # reduce our confidence in result
