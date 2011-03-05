@@ -3,7 +3,8 @@
 # Distributed under the terms of the GNU General Public License version 2
 # See COPYING for details
 
-import md5
+try: from hashlib import md5
+except: from md5 import new as md5
 import base64
 import logging
 
@@ -14,7 +15,7 @@ __all__ = [ 'umis' ]
 __version__ = '0.3'
 
 def umis(id,nonce):
-  digest = md5.new(id)
+  digest = md5(id)
   digest.update(str(nonce))
   return base64.b64encode(digest.digest(),'.$').rstrip('=')
 
