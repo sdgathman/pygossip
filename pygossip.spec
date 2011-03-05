@@ -1,12 +1,13 @@
 %define sysvinit pygossip.rc
-%define python python2.4
+%define python python2.6
+%define pythonbase python26
 %define progdir /usr/lib/pymilter
 
 Summary: Python GOSSiP distributed domain reputation service
 Name: pygossip
 Version: 0.5
-Release: 2
-Source0: %{name}-%{version}.tar.gz
+Release: 3.py26
+Source0: pygossip-%{version}.tar.gz
 License: Python license
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
@@ -15,6 +16,7 @@ BuildArch: noarch
 Vendor: Stuart Gathman <stuart@bmsi.com>
 Packager: Stuart D. Gathman <stuart@bmsi.com>
 Url: http://bmsi.com/python/pygossip.html
+Requires: %{pythonbase}
 
 %description
 Python GOSSiP library and server.
@@ -32,14 +34,14 @@ See http://gossip-project.sourceforge.net/
     http://pymilter.sourceforge.net/
 
 %prep
-%setup
+%setup -n pygossip-%{version}
 
 %build
-python2.4 setup.py build
+%{python} setup.py build
 
 %install
 rm -rf $RPM_BUILD_ROOT
-python2.4 setup.py install --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+%{python} setup.py install --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 #grep '.pyc$' INSTALLED_FILES | sed -e 's/c$/o/' >>INSTALLED_FILES
 rm -rf $RPM_BUILD_ROOT/usr/bin
 mkdir -p $RPM_BUILD_ROOT/etc/mail
@@ -49,13 +51,6 @@ mkdir -p $RPM_BUILD_ROOT/var/log/milter
 mkdir -p $RPM_BUILD_ROOT/var/run/milter
 mkdir -p $RPM_BUILD_ROOT%{progdir}
 # AIX requires daemons to *not* fork, sysvinit requires that they do!
-%ifos aix4.1
-cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
-#!/bin/sh
-cd %{progdir}
-exec /usr/local/bin/python pygossip.py >>/var/log/milter/pygossip.log 2>&1
-EOF
-%else
 cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
 #!/bin/sh
 datadir=/var/log/milter
@@ -84,7 +79,6 @@ w
 q
 EOF
 
-%endif
 chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh
 cp -p tc.py pygossip*.py $RPM_BUILD_ROOT%{progdir}
 
@@ -125,6 +119,8 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/tc.py?
 
 %changelog
+* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-3
+- Python-2.6
 * Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-2
 - Handle missing observations of peer
 * Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-1
