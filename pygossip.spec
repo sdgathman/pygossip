@@ -16,7 +16,7 @@ BuildArch: noarch
 Vendor: Stuart Gathman <stuart@bmsi.com>
 Packager: Stuart D. Gathman <stuart@bmsi.com>
 Url: http://bmsi.com/python/pygossip.html
-Requires: %{pythonbase}
+Requires: %{pythonbase}, %{pythonbase}-pymilter
 
 %description
 Python GOSSiP library and server.
@@ -79,7 +79,7 @@ w
 q
 EOF
 
-chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh
+chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh tc.py pygossip*.py
 cp -p tc.py pygossip*.py $RPM_BUILD_ROOT%{progdir}
 
 # logfile rotation

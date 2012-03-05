@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.23  2010/11/23 16:24:06  customdesigned
+# Handle missing observation
+#
 # Revision 1.22  2010/11/05 17:24:03  customdesigned
 # init peer cfi
 #
@@ -103,6 +106,7 @@ class Peer(object):
     self.obs = None
     self.down = 0
     self.cfi = 0
+    self.rep = 0
 
   def query(self,umis,id,qual,ttl):
     if self.down > 0:
@@ -127,7 +131,17 @@ class Peer(object):
     return host in iplist
 
   def assess(self,rep,cfi):
-    "Compare most recent opinion with our opinion and update reputation"
+    """Compare most recent opinion with our opinion and update reputation.
+    >>> peer = Peer('localhost')
+    >>> peer.rep,peer.cfi = -76,0
+    >>> peer.assess(76,0) is None
+    True
+    >>> peer.cfi = 2
+    >>> peer.assess(76,2)
+    -1
+    >>> peer.assess(76,0)
+    
+    """
     if self.cfi >= 1 and int(cfi) >= 1:
       # disagreed
       if self.rep > 0 and rep < 0:
@@ -206,8 +220,8 @@ def weighted_stats(l,offset=0):
 
 def aggregate(agg,offset=0):
   """Aggregate reputation and confidence scores.
-  >>> [round(x,1) for x in aggregate([(-76.159416,0.219053),(0,0)])]
-  [-76.1, 0.2]
+  >>> ['%g'%round(x,1) for x in aggregate([(-76.159416,0.219053),(0,0)])]
+  ['-76.2', '0.2']
   """
   n = len(agg)
   if n < 1: return (0.0,0,0)
@@ -550,6 +564,7 @@ class Gossip(object):
     self.setspam(key,vote)
 
   def setspam(self,key,vote):
+    if vote is None: return
     dbp = self.dbp
     self.lock.acquire()
     try:

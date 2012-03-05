@@ -1,3 +1,4 @@
+#!/usr/bin/python2.6
 # Test gossip server by sending queries from command line.
 import sys
 import time
