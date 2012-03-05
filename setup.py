@@ -15,7 +15,7 @@ setup(
         #-- Package description
         name = 'pygossip',
         license = 'Python license',
-        version = '0.5',
+        version = '0.6',
         description = 'Python GOSSiP distributed domain reputation service',
         long_description = """Python GOSSiP library and server.
 As SPF is implemented, spammers will also adopt SPF.  With forging

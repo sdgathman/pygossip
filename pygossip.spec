@@ -5,8 +5,8 @@
 
 Summary: Python GOSSiP distributed domain reputation service
 Name: pygossip
-Version: 0.5
-Release: 3.py26
+Version: 0.6
+Release: 1
 Source0: pygossip-%{version}.tar.gz
 License: Python license
 Group: Development/Libraries
@@ -119,17 +119,24 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/tc.py?
 
 %changelog
+* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.6-1
+- Don't update peer reputation when neither we nor peer are confident of result.
+
 * Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-3
 - Python-2.6
+
 * Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-2
 - Handle missing observations of peer
+
 * Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-1
 - Allow socket reuse for immediate restart
 - Command line client tc.py
 - Persistent peer reputation
+
 * Wed Oct 31 2007 Stuart Gathman <stuart@bmsi.com> 0.4-1
 - Add locking to client to prevent mixing results.
 - Add Reset command.
+
 * Sat Mar 17 2007 Stuart Gathman <stuart@bmsi.com> 0.3-1
 - Fix server run loop on client disconnect.
 - Optional datadir, run from /var/log/milter if pygossip present there.

@@ -1,5 +1,5 @@
-VERS=pygossip-0.5
-V=pygossip-0_5
+VERS=pygossip-0.6
+V=pygossip-0_6
 
 tar:
 	cvs export -r $(V) -d $(VERS) pygossip
