@@ -1,3 +1,4 @@
+#!/usr/bin/python2.6
 # Purge ancient records from reputation database.
 
 import shelve

@@ -6,7 +6,6 @@ import gossip
 from gossip.client import Gossip
 from optparse import OptionParser
 
-#gossip_node = Gossip(test=True)
 parser = OptionParser(
         usage='usage: %prog [options] [Q|R domain qual] [F UMIS S|H]')
 parser.add_option("-s", "--server", dest="host",

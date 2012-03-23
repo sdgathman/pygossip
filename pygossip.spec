@@ -113,9 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/pygossip.sh
 %{progdir}/pygossip.py
 %{progdir}/pygossip.py?
-%{progdir}/pygossip_purge.py
+%attr(0755,root,root) %{progdir}/pygossip_purge.py
 %{progdir}/pygossip_purge.py?
-%{progdir}/tc.py
+%attr(0755,root,root) %{progdir}/tc.py
 %{progdir}/tc.py?
 
 %changelog
