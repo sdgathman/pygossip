@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.24  2012/03/05 21:16:15  customdesigned
+# Don't update peer reputation when neither we nor peer are confident of result.
+#
 # Revision 1.23  2010/11/23 16:24:06  customdesigned
 # Handle missing observation
 #
@@ -125,7 +128,11 @@ class Peer(object):
 
   def is_me(self,connect_ip):
     "Return true if incoming connection matches this peer."
-    iplist = self.client.get_iplist()
+    try:
+      iplist = self.client.get_iplist()
+    except:
+      log.exception("Peer %s",self.host)
+      return True
     if not connect_ip: return False
     host,port = connect_ip
     return host in iplist
