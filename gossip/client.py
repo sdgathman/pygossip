@@ -57,7 +57,6 @@ class Gossip(object):
       try:
         sock = self.sock
         if not sock:
-	  print self.addressfamily
           sock = socket.socket(self.addressfamily,socket.SOCK_STREAM)
           sock.connect(self.node)
           self.sock = sock

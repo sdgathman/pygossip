@@ -5,6 +5,7 @@
 
 import SocketServer
 import logging
+import socket
 
 log = logging.getLogger('gossip')
 
@@ -38,6 +39,7 @@ class Handler(SocketServer.BaseRequestHandler):
       try:
         buf = self.readline()
 	if buf == '': continue
+	print 'Server:',buf
         resp = gossip.do_request(buf,self.client_address)
 	if resp:
 	  ssl.sendall(resp+'\n\n')
@@ -47,15 +49,17 @@ class Handler(SocketServer.BaseRequestHandler):
         log.debug("Ending connection")
 	return
       except ValueError:
-        log.info("Bad req: "+buf)
+        log.exception("Bad req: "+buf)
 
 class Daemon(SocketServer.ThreadingTCPServer):
 
   allow_reuse_address = True
 
-  def __init__(self,gossip,addr='0.0.0.0',port=11900):
+  def __init__(self,gossip,addr='::',port=11900):
     self.gossip = gossip
     server_addr = (addr,port)
+    if addr.find(':') >= 0:
+      SocketServer.ThreadingTCPServer.address_family = socket.AF_INET6
     SocketServer.ThreadingTCPServer.__init__(self,server_addr,Handler)
 
   def run(self):
