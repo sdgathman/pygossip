@@ -97,14 +97,14 @@ rm -rf $RPM_BUILD_ROOT
 /etc/logrotate.d/pygossip
 /etc/rc.d/init.d/pygossip
 %{progdir}/pygossip.py
-#{progdir}/pygossip.py?
+%{progdir}/pygossip.py?
 %attr(0755,root,root) %{progdir}/pygossip_purge.py
-#{progdir}/pygossip_purge.py?
+%{progdir}/pygossip_purge.py?
 %attr(0755,root,root) %{progdir}/tc.py
-#{progdir}/tc.py?
+%{progdir}/tc.py?
 
 %changelog
-* Sat Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.7-1
+* Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-1
 - Support IPv6 sockets for client and server
 - log exceptions with stack trace
 
