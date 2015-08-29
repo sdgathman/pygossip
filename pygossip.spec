@@ -91,7 +91,7 @@ rm -rf $RPM_BUILD_ROOT
 %files -f INSTALLED_FILES
 %doc README CHANGES COPYING TODO
 %defattr(-,root,root)
-%config /etc/mail/pygossip.cfg
+%config(noreplace) /etc/mail/pygossip.cfg
 %dir %attr(-,mail,mail)/var/run/milter
 %dir %attr(-,mail,mail)/var/log/milter
 /etc/logrotate.d/pygossip
@@ -107,6 +107,7 @@ rm -rf $RPM_BUILD_ROOT
 * Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-2
 - remove check for pygossip.sh in initscript
 - skip check for null read in readline
+- noreplace pygossip.cfg
 
 * Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-1
 - Support IPv6 sockets for client and server
