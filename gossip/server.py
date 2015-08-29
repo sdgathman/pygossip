@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.25  2015/02/19 02:26:30  customdesigned
+# Skip peers with rDNS not responding.
+#
 # Revision 1.24  2012/03/05 21:16:15  customdesigned
 # Don't update peer reputation when neither we nor peer are confident of result.
 #
@@ -128,13 +131,14 @@ class Peer(object):
 
   def is_me(self,connect_ip):
     "Return true if incoming connection matches this peer."
+    if not connect_ip: return False
     try:
       iplist = self.client.get_iplist()
+      host,port = connect_ip[:2]
     except:
-      log.exception("Peer %s",self.host)
+      log.exception("Client %s Peer %s",connect_ip,self.host)
+      if True: raise	# just until we reproduce hang problem
       return True
-    if not connect_ip: return False
-    host,port = connect_ip
     return host in iplist
 
   def assess(self,rep,cfi):
