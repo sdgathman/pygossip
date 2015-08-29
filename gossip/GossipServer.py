@@ -29,6 +29,7 @@ class Handler(SocketServer.BaseRequestHandler):
     while n < len(s):
       if n > 0: s = s[n:]
       n = ssl.send(s)
+    ssl.flush()
 
   def handle(self):
     log.info("connect %s",self.client_address)
