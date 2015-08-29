@@ -30,8 +30,6 @@ prog="pygossip"
 piddir="/var/run/milter"
 logdir="/var/log/milter"
 
-[ -x ${progdir}/pygossip.sh ] || exit 0
-
 start() {
 	# Start daemons.
         if test -s ${logdir}/${prog}.py; then

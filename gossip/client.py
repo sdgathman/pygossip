@@ -45,7 +45,7 @@ class Gossip(object):
     while pos < 0:
       s = ssl.recv(256)
       # FIXME: leave out until we reproduce hang problem
-      if not s: raise EOFError()
+      #if not s: raise EOFError()
       buf += s
       pos = buf.find('\n')
     self.buf = buf[pos+1:]

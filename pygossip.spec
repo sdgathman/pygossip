@@ -6,7 +6,7 @@
 Summary: Python GOSSiP distributed domain reputation service
 Name: pygossip
 Version: 0.7
-Release: 1%{dist}
+Release: 2%{dist}
 Source0: pygossip-%{version}.tar.gz
 License: Python license
 Group: Development/Libraries
@@ -104,9 +104,14 @@ rm -rf $RPM_BUILD_ROOT
 %{progdir}/tc.py?
 
 %changelog
+* Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-2
+- remove check for pygossip.sh in initscript
+- skip check for null read in readline
+
 * Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-1
 - Support IPv6 sockets for client and server
 - log exceptions with stack trace
+- use daemonize for initscript
 
 * Mon Mar 05 2012 Stuart Gathman <stuart@bmsi.com> 0.6-1
 - Don't update peer reputation when neither we nor peer are confident of result.
