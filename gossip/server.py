@@ -4,6 +4,9 @@
 # See COPYING for details
 
 # $Log$
+# Revision 1.26  2015/08/29 15:42:17  customdesigned
+# Handle IP6 socket
+#
 # Revision 1.25  2015/02/19 02:26:30  customdesigned
 # Skip peers with rDNS not responding.
 #
@@ -599,11 +602,16 @@ class Gossip(object):
     log.info(buf)
     e = buf.split(':')
     qtype = e[0]
+    umis = 'REQUEST_ERROR'
     if qtype == 'Q':
-      host,qual,c,umis = e[1:5]
-      ttl = int(c)
-      resp = '%s %s: %s' % self.query(umis,host,qual,ttl,connect_ip)
-      log.info(resp)
+      try:
+	host,qual,c,umis = e[1:5]
+	ttl = int(c)
+	resp = '%s %s: %s' % self.query(umis,host,qual,ttl,connect_ip)
+	log.info(resp)
+      except:
+        log.exception()
+	resp = 'ERROR X-GOSSiP: %s,0,0'%umis
       return resp
     if qtype == 'F':
       umis,spam = e[1:3]

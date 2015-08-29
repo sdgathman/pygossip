@@ -22,7 +22,7 @@ RSEEN_MAX = 30
 logging.basicConfig(
         stream=sys.stderr,
         level=logging.INFO,
-        format='%(asctime)s [%(thread)s] %(message)s',
+        format='%(asctime)s %(message)s',
         datefmt='%Y%b%d %H:%M:%S'
 )
 

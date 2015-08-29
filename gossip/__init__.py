@@ -12,7 +12,7 @@ log = logging.getLogger('gossip')
 
 __all__ = [ 'umis' ]
 
-__version__ = '0.6'
+__version__ = '0.7'
 
 def umis(id,nonce):
   digest = md5(id)

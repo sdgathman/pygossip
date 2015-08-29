@@ -8,8 +8,8 @@
 # config: /etc/mail/pygossip.cfg
 # pidfile: /var/run/milter/pygossip.pid
 
-python="python2.4"
-progdir=/usr/lib/pymilter
+python="python2.6"
+progdir="/usr/lib/pymilter"
 
 pidof() {
 	set - ""
@@ -27,14 +27,24 @@ pidof() {
 
 RETVAL=0
 prog="pygossip"
+piddir="/var/run/milter"
+logdir="/var/log/milter"
 
 [ -x ${progdir}/pygossip.sh ] || exit 0
 
 start() {
 	# Start daemons.
+        if test -s ${logdir}/${prog}.py; then
+          workdir="${logdir}" # use log dir if it exists for debugging
+        else
+          workdir="${progdir}"
+        fi
 
 	echo -n "Starting $prog: "
-	daemon --check pygossip --user mail ${progdir}/pygossip.sh
+        daemon --check pygossip --pidfile "${piddir}/${prog}.pid" --user mail \
+        daemonize -a -e "${logdir}/${prog}.log" -o "${logdir}/${prog}.log" \
+                -c "${workdir}" -p "${piddir}/${prog}.pid" \
+                /usr/bin/${python} ${prog}.py
 	RETVAL=$?
 	echo
 	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/pygossip

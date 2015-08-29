@@ -1,12 +1,12 @@
 %define sysvinit pygossip.rc
 %define python python2.6
-%define pythonbase python26
+%define pythonbase python
 %define progdir /usr/lib/pymilter
 
 Summary: Python GOSSiP distributed domain reputation service
 Name: pygossip
-Version: 0.6
-Release: 1
+Version: 0.7
+Release: 1%{dist}
 Source0: pygossip-%{version}.tar.gz
 License: Python license
 Group: Development/Libraries
@@ -16,7 +16,7 @@ BuildArch: noarch
 Vendor: Stuart Gathman <stuart@bmsi.com>
 Packager: Stuart D. Gathman <stuart@bmsi.com>
 Url: http://bmsi.com/python/pygossip.html
-Requires: %{pythonbase}, %{pythonbase}-pymilter
+Requires: %{pythonbase}, %{pythonbase}-pymilter, daemonize
 
 %description
 Python GOSSiP library and server.
@@ -50,20 +50,6 @@ cp pygossip.cfg $RPM_BUILD_ROOT/etc/mail
 mkdir -p $RPM_BUILD_ROOT/var/log/milter
 mkdir -p $RPM_BUILD_ROOT/var/run/milter
 mkdir -p $RPM_BUILD_ROOT%{progdir}
-# AIX requires daemons to *not* fork, sysvinit requires that they do!
-cat >$RPM_BUILD_ROOT%{progdir}/pygossip.sh <<'EOF'
-#!/bin/sh
-datadir=/var/log/milter
-exec >>${datadir}/pygossip.log 2>&1
-if test -s ${datadir}/pygossip.py; then
-  cd %{datadir} # use version in log dir if it exists for debugging
-else
-  cd %{progdir}
-fi
-%{python} pygossip.py &
-echo $! >/var/run/milter/pygossip.pid
-EOF
-
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 cp %{sysvinit} $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip
 ed $RPM_BUILD_ROOT/etc/rc.d/init.d/pygossip <<'EOF'
@@ -79,7 +65,7 @@ w
 q
 EOF
 
-chmod a+x $RPM_BUILD_ROOT%{progdir}/pygossip.sh tc.py pygossip*.py
+chmod a+x tc.py pygossip*.py
 cp -p tc.py pygossip*.py $RPM_BUILD_ROOT%{progdir}
 
 # logfile rotation
@@ -110,16 +96,19 @@ rm -rf $RPM_BUILD_ROOT
 %dir %attr(-,mail,mail)/var/log/milter
 /etc/logrotate.d/pygossip
 /etc/rc.d/init.d/pygossip
-%{progdir}/pygossip.sh
 %{progdir}/pygossip.py
-%{progdir}/pygossip.py?
+#{progdir}/pygossip.py?
 %attr(0755,root,root) %{progdir}/pygossip_purge.py
-%{progdir}/pygossip_purge.py?
+#{progdir}/pygossip_purge.py?
 %attr(0755,root,root) %{progdir}/tc.py
-%{progdir}/tc.py?
+#{progdir}/tc.py?
 
 %changelog
-* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.6-1
+* Sat Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.7-1
+- Support IPv6 sockets for client and server
+- log exceptions with stack trace
+
+* Mon Mar 05 2012 Stuart Gathman <stuart@bmsi.com> 0.6-1
 - Don't update peer reputation when neither we nor peer are confident of result.
 
 * Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-3
