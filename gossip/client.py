@@ -15,18 +15,27 @@ EOL = '\n\n'
 class Gossip(object):
   def __init__(self,host='127.0.0.1',port=11900,test=False):
     self.node = (host,port)
+
     # in test mode, we purposefully split up req to make sure server
     # can handle it.
     self.test = test
     self.sock = None
     self.buf = ''
     self.persistent = True
+    for a in self.get_iplist():
+      if a.find(':') >= 0:
+	self.addressfamily = socket.AF_INET6
+	break
+    else:
+      self.addressfamily = socket.AF_INET
     self.lock = thread.allocate_lock()
 
   def get_iplist(self):
     host,port = self.node
-    host,aliases,iplist = socket.gethostbyname_ex(host)
-    return iplist
+    inet = socket.AF_INET,socket.AF_INET6
+    return [ addr[0]
+      for family,socktype,proto,canon,addr in socket.getaddrinfo(host,None)
+        if family in inet ]
 
   # hopefully a better readline
   def readline(self):
@@ -34,7 +43,10 @@ class Gossip(object):
     buf = self.buf
     pos = buf.find('\n')
     while pos < 0:
-      buf += ssl.recv(256)
+      s = ssl.recv(256)
+      # FIXME: leave out until we reproduce hang problem
+      #if not s: raise EOFError()
+      buf += s
       pos = buf.find('\n')
     self.buf = buf[pos+1:]
     return buf[:pos]
@@ -45,7 +57,8 @@ class Gossip(object):
       try:
         sock = self.sock
         if not sock:
-          sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	  print self.addressfamily
+          sock = socket.socket(self.addressfamily,socket.SOCK_STREAM)
           sock.connect(self.node)
           self.sock = sock
           self.buf = ''
@@ -67,9 +80,13 @@ class Gossip(object):
         log.error('%s: %s',self.node[0],x)
         if sock: sock.close()
         self.sock = None
-        return None
+	if self.addressfamily == socket.AF_INET: return None
     finally:
       self.lock.release()
+    # try fallback to INET
+    log.info('Fallback to IPv4')
+    self.addressfamily = socket.AF_INET
+    return self.sendreq(req,void)
 
   def query(self,umis,id,qual,ttl=1):
     req = "Q:%s:%s:%d:%s%s" % (id,qual,ttl,umis,EOL)
