@@ -3,8 +3,14 @@
 import sys
 import time
 import gossip
+import logging
 from gossip.client import Gossip
 from optparse import OptionParser
+
+logging.basicConfig(
+        stream=sys.stderr, level=logging.INFO,
+        format='%(asctime)s %(message)s', datefmt='%Y%b%d %H:%M:%S'
+)
 
 parser = OptionParser(
         usage='usage: %prog [options] [Q|R domain qual] [F UMIS S|H]')
