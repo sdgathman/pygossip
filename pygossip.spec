@@ -106,7 +106,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-2
 - remove check for pygossip.sh in initscript
-- skip check for null read in readline
+- clush output in sendall
 - noreplace pygossip.cfg
 
 * Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-1

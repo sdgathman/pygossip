@@ -1,3 +1,27 @@
+* Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-2
+- remove check for pygossip.sh in initscript
+- flush output in sendall
+- noreplace pygossip.cfg
+
+* Sat Aug 29 2015 Stuart Gathman <stuart@bmsi.com> 0.7-1
+- Support IPv6 sockets for client and server
+- log exceptions with stack trace
+- use daemonize for initscript
+
+* Mon Mar 05 2012 Stuart Gathman <stuart@bmsi.com> 0.6-1
+- Don't update peer reputation when neither we nor peer are confident of result.
+
+* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-3
+- Python-2.6
+
+* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-2
+- Handle missing observations of peer
+
+* Fri Nov 05 2010 Stuart Gathman <stuart@bmsi.com> 0.5-1
+- Allow socket reuse for immediate restart
+- Command line client tc.py
+- Persistent peer reputation
+
 0.4	Add locking to client to prevent mixing results.
 	Add Reset command.
 0.3	Fix loop in server
